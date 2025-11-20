@@ -1,10 +1,10 @@
+import { store } from '@/src/store';
+import { syncToServer } from '@/src/sync';
+import { CameraView } from 'expo-camera';
+import * as Crypto from 'expo-crypto';
 import React, { useMemo, useState } from 'react';
 import styled from 'styled-components/native';
-import { store } from '@/src/store';
-import * as Crypto from 'expo-crypto';
-import { BarCodeScanner } from 'expo-barcode-scanner';
 import { useTable } from 'tinybase/ui-react';
-import { syncToServer } from '@/src/sync';
 
 export default function SaleNewScreen() {
   const products = useTable('products') as Record<string, any>;
@@ -61,13 +61,16 @@ export default function SaleNewScreen() {
       {scanOpen && (
         <Modal>
           <ScannerContainer>
-            <BarCodeScanner
-              onBarCodeScanned={({ data }) => {
+            <CameraView
+              style={{ flex: 1 }}
+              barcodeScannerSettings={{
+                barcodeTypes: ['qr', 'ean13', 'code128'],
+              }}
+              onBarcodeScanned={({ data }) => {
                 findProductByBarcode(String(data));
                 setScanOpen(false);
-              }}
-              style={{ flex: 1 }}
-            />
+              }}>
+            </CameraView>
             <Button onPress={() => setScanOpen(false)}>
               <ButtonText>Fechar</ButtonText>
             </Button>

@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components/native';
 import { store } from '@/src/store';
-import * as FileSystem from 'expo-file-system';
-import * as Crypto from 'expo-crypto';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { BarCodeScanner } from 'expo-barcode-scanner';
 import { syncToServer } from '@/src/sync';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Crypto from 'expo-crypto';
+import { File, Paths } from 'expo-file-system';
+import React, { useState } from 'react';
+import { Keyboard } from 'react-native';
+import styled from 'styled-components/native';
 
 export default function ProductNewScreen() {
   const [description, setDescription] = useState('');
@@ -17,11 +17,8 @@ export default function ProductNewScreen() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-  const [barcodePermission, setBarcodePermission] = useState(false);
-
-  useEffect(() => {
-    BarCodeScanner.requestPermissionsAsync().then((res) => setBarcodePermission(res.status === 'granted'));
-  }, []);
+  const cameraRef = React.useRef<CameraView | null>(null);
+  const scannerRef = React.useRef<CameraView | null>(null);
 
   const saveProduct = async () => {
     const id = Crypto.randomUUID();
@@ -43,14 +40,38 @@ export default function ProductNewScreen() {
     setImageUri('');
   };
 
-  const takePhoto = async (camera: any) => {
-    const photo = await camera.takePictureAsync({ quality: 0.8 });
-    if (photo?.uri) {
-      const target = `${FileSystem.documentDirectory}images/${Crypto.randomUUID()}.jpg`;
-      await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}images`, { intermediates: true }).catch(() => {});
-      await FileSystem.copyAsync({ from: photo.uri, to: target });
-      setImageUri(target);
-      setCameraOpen(false);
+  async function saveImage(capturedUri: string) {
+    try {
+      // nome único
+      const fileName = `foto_${Crypto.randomUUID()}.jpg`;
+
+      // cria um File apontando para o destino no documentDirectory
+      const destinationFile = new File(Paths.document, fileName);
+
+      // cria o arquivo no diretório (somente o path; o conteúdo virá via copy)
+      await destinationFile.create();
+
+      console.log("Imagem salva em:", destinationFile.uri);
+
+      return destinationFile.uri;
+    } catch (error) {
+      console.error("Erro ao salvar imagem:", error);
+      throw error;
+    }
+  }
+
+  const takePhoto = async (
+    camera: any
+  ) => {
+    try {
+      const photo = await camera.takePictureAsync({ quality: 0.8, base64: false });
+      if (!photo) return;
+
+      await saveImage(photo.uri);
+      setImageUri(photo.uri)
+      setCameraOpen(false)
+    } catch (err) {
+      console.error("Erro ao salvar foto:", err);
     }
   };
 
@@ -82,13 +103,17 @@ export default function ProductNewScreen() {
           <Input value={barcode} onChangeText={setBarcode} placeholder="Digite ou escaneie" />
         </Field>
         <Spacer />
-        <Button onPress={() => setScanOpen(true)}>
+        <Button onPress={() => {
+          Keyboard.dismiss();
+          setScanOpen(true)
+        }}>
           <ButtonText>Escanear</ButtonText>
         </Button>
       </Row>
       <ImageRow>
         {imageUri ? <ProductImage source={{ uri: imageUri }} /> : <Placeholder>Sem imagem</Placeholder>}
         <Button onPress={async () => {
+          Keyboard.dismiss();
           if (!permission?.granted) {
             await requestPermission();
           }
@@ -103,34 +128,51 @@ export default function ProductNewScreen() {
 
       {cameraOpen && (
         <Modal>
-          <CameraView style={{ flex: 1 }}>
-            {({ camera }) => (
-              <CameraOverlay>
-                <Button onPress={() => setCameraOpen(false)}>
-                  <ButtonText>Fechar</ButtonText>
-                </Button>
-                <ButtonPrimary onPress={() => takePhoto(camera)}>
-                  <ButtonPrimaryText>Capturar</ButtonPrimaryText>
-                </ButtonPrimary>
-              </CameraOverlay>
-            )}
-          </CameraView>
+          <CameraView 
+            style={{ flex: 1 }} 
+            ref={(ref) => {
+              cameraRef.current = ref;
+            }}
+          />
+          <CameraOverlay>
+            <Button onPress={() => setCameraOpen(false)}>
+              <ButtonText>Fechar</ButtonText>
+            </Button>
+            <ButtonPrimary
+              onPress={async () => {
+                if (cameraRef) {
+                  await takePhoto(cameraRef.current);
+                }
+              }}
+            >
+              <ButtonPrimaryText>Capturar</ButtonPrimaryText>
+            </ButtonPrimary>
+          </CameraOverlay>
         </Modal>
       )}
 
       {scanOpen && (
         <Modal>
           <ScannerContainer>
-            <BarCodeScanner
-              onBarCodeScanned={({ data }) => {
+            <CameraView
+              style={{ flex: 1 }}
+              ref={(ref) => {
+                if (ref) scannerRef.current = ref;
+              }}
+              barcodeScannerSettings={{
+                barcodeTypes: ['qr', 'ean13', 'code128'],
+              }}
+              onBarcodeScanned={({ data }) => {
                 setBarcode(String(data));
                 setScanOpen(false);
               }}
-              style={{ flex: 1 }}
             />
-            <Button onPress={() => setScanOpen(false)}>
-              <ButtonText>Fechar</ButtonText>
-            </Button>
+
+            <CameraOverlay>
+              <Button onPress={() => setScanOpen(false)}>
+                <ButtonText>Fechar</ButtonText>
+              </Button>
+            </CameraOverlay>
           </ScannerContainer>
         </Modal>
       )}

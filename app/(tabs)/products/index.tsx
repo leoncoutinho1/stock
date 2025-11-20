@@ -1,11 +1,16 @@
+import { Product } from '@/src/types';
 import React from 'react';
+import { FlatList, FlatListProps, Image } from 'react-native';
 import styled from 'styled-components/native';
 import { useTable } from 'tinybase/ui-react';
-import { Image } from 'react-native';
+
+type ListItem = [string, Product];
 
 export default function ProductsListScreen() {
-  const products = useTable('products') as Record<string, any>;
-  const data = Object.entries(products ?? {});
+  // const products = useTable('products') as Record<string, any>;
+  // const data = Object.entries(products ?? {});
+  const products = useTable('products') as Record<string, Product> | null;
+  const data: ListItem[] = Object.entries(products ?? {}) as ListItem[];
 
   return (
     <Container>
@@ -43,7 +48,8 @@ const Title = styled.Text`
   margin-bottom: 12px;
 `;
 
-const List = styled.FlatList`` as unknown as typeof styled.FlatList;
+//const List = styled.FlatList`` as unknown as typeof styled.FlatList;
+const List = styled(FlatList as new (props: FlatListProps<ListItem>) => FlatList<ListItem>)`` as unknown as typeof FlatList<ListItem>;
 
 const Item = styled.View`
   flex-direction: row;
