@@ -62,11 +62,13 @@ export default function SaleNewScreen() {
 
   const saveSale = async () => {
     if (!items.length) return;
+    const saleId = Crypto.randomUUID();
+    const saleTimestamp = Date.now();
     for (const it of items) {
       const qty = Math.max(Number(it.quantity) || 0, 0);
       if (!qty) continue;
       const id = Crypto.randomUUID();
-      store.setRow('sales', id, { productId: it.productId, quantity: qty, timestamp: Date.now() });
+      store.setRow('sales', id, { saleId, productId: it.productId, quantity: qty, timestamp: saleTimestamp });
       const current = Number(store.getCell('products', it.productId, 'quantity') || 0);
       store.setCell('products', it.productId, 'quantity', Math.max(current - qty, 0));
     }

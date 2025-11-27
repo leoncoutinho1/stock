@@ -1,8 +1,8 @@
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import React, { useMemo } from 'react';
 import styled from 'styled-components/native';
 import { useTable } from 'tinybase/ui-react';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function SalesListScreen() {
   const sales = useTable('sales') as Record<string, any>;
@@ -12,36 +12,54 @@ export default function SalesListScreen() {
   const scheme = useColorScheme() ?? 'light';
   const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
 
-  const entries = useMemo(() => {
+  const groups = useMemo(() => {
     const arr = Object.entries(sales ?? {}) as [string, any][];
-    return arr.sort((a, b) => Number(b[1]?.timestamp || 0) - Number(a[1]?.timestamp || 0));
+    const map = new Map<string, { items: [string, any][], timestamp: number }>();
+    for (const [id, s] of arr) {
+      const gid = String(s?.saleId ?? id);
+      const ts = Number(s?.timestamp || 0);
+      const g = map.get(gid);
+      if (g) {
+        g.items.push([id, s]);
+        g.timestamp = Math.max(g.timestamp, ts);
+      } else {
+        map.set(gid, { items: [[id, s]], timestamp: ts });
+      }
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1].timestamp - a[1].timestamp);
   }, [sales]);
 
   return (
     <Container style={{ backgroundColor: bgColor }}>
       <Title style={{ color: textColor }}>Vendas realizadas</Title>
-      {entries.length === 0 ? (
+      {groups.length === 0 ? (
         <Placeholder style={{ color: textColor }}>Nenhuma venda registrada</Placeholder>
       ) : (
         <List>
-          {entries.map(([id, s]) => {
-            const p = products?.[String(s.productId)];
-            const price = Number(p?.price || 0);
-            const qty = Number(s?.quantity || 0);
-            const subtotal = price * qty;
-            const date = new Date(Number(s?.timestamp || 0));
+          {groups.map(([gid, g]) => {
+            const groupDate = new Date(g.timestamp);
             return (
-              <SaleRow key={id} style={{ backgroundColor: cardBg }}>
-                <SaleTitle style={{ color: textColor }} numberOfLines={1}>
-                  {p?.description ?? 'Produto removido'}
-                </SaleTitle>
-                <SaleMeta style={{ color: textColor }}>
-                  Código: {p?.barcode ?? '-'} • Qtd: {qty} • Preço: {price.toFixed(2)} • Subtotal: {subtotal.toFixed(2)}
-                </SaleMeta>
-                <SaleMeta style={{ color: textColor }}>
-                  {isNaN(date.getTime()) ? '-' : date.toLocaleString()}
-                </SaleMeta>
-              </SaleRow>
+              <Group key={gid}>
+                <GroupTitle style={{ color: textColor }}>
+                  {isNaN(groupDate.getTime()) ? '-' : groupDate.toLocaleString()}
+                </GroupTitle>
+                {g.items.map(([id, s]) => {
+                  const p = products?.[String(s.productId)];
+                  const price = Number(p?.price || 0);
+                  const qty = Number(s?.quantity || 0);
+                  const subtotal = price * qty;
+                  return (
+                    <SaleRow key={id} style={{ backgroundColor: cardBg }}>
+                      <SaleTitle style={{ color: textColor }} numberOfLines={1}>
+                        {p?.description ?? 'Produto removido'}
+                      </SaleTitle>
+                      <SaleMeta style={{ color: textColor }}>
+                        Código: {p?.barcode ?? '-'} • Qtd: {qty} • Preço: {price.toFixed(2)} • Subtotal: {subtotal.toFixed(2)}
+                      </SaleMeta>
+                    </SaleRow>
+                  );
+                })}
+              </Group>
             );
           })}
         </List>
@@ -67,6 +85,16 @@ const Placeholder = styled.Text`
 
 const List = styled.View``;
 
+const Group = styled.View`
+  margin-bottom: 12px;
+`;
+
+const GroupTitle = styled.Text`
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+`;
+
 const SaleRow = styled.View`
   padding: 12px;
   border-radius: 8px;
@@ -81,4 +109,3 @@ const SaleTitle = styled.Text`
 const SaleMeta = styled.Text`
   font-size: 12px;
 `;
-
