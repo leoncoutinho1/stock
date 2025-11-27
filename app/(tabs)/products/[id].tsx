@@ -1,4 +1,5 @@
 import { store } from '@/src/store';
+import { syncToServer } from '@/src/sync';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Crypto from 'expo-crypto';
 import { File, Paths } from 'expo-file-system';
@@ -12,6 +13,7 @@ export default function ProductEditScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const row = useRow('products', String(id)) as any;
+  const isNew = String(id) === 'new';
   const [description, setDescription] = useState('');
   const [cost, setCost] = useState('');
   const [price, setPrice] = useState('');
@@ -25,26 +27,47 @@ export default function ProductEditScreen() {
   const scannerRef = React.useRef<CameraView | null>(null);
 
   useEffect(() => {
-    if (row) {
+    if (row && !isNew) {
       setDescription(String(row.description ?? ''));
       setCost(String(row.cost ?? ''));
       setPrice(String(row.price ?? ''));
       setQuantity(String(row.quantity ?? ''));
       setBarcode(String(row.barcode ?? ''));
       setImageUri(String(row.image ?? ''));
+    } else if (isNew) {
+      setDescription('');
+      setCost('');
+      setPrice('');
+      setQuantity('');
+      setBarcode('');
+      setImageUri('');
     }
-  }, [id, row]);
+  }, [id, row, isNew]);
 
   const saveChanges = async () => {
-    store.setRow('products', String(id), {
+    const payload = {
       description: description.trim(),
       cost: Number(cost) || 0,
       price: Number(price) || 0,
       quantity: Number(quantity) || 0,
       barcode: barcode.trim(),
       image: imageUri,
-    });
-    router.back();
+    };
+
+    if (isNew) {
+      const newId = Crypto.randomUUID();
+      store.setRow('products', newId, payload);
+      await syncToServer();
+      setDescription('');
+      setCost('');
+      setPrice('');
+      setQuantity('');
+      setBarcode('');
+      setImageUri('');
+    } else {
+      store.setRow('products', String(id), payload);
+      router.back();
+    }
   };
 
   const delProduct = async () => {
@@ -103,7 +126,7 @@ export default function ProductEditScreen() {
 
   return (
     <Container>
-      <Title>Editar Produto</Title>
+      <Title>{isNew ? 'Cadastrar Produto' : 'Editar Produto'}</Title>
       <Field>
         <Label>Descrição</Label>
         <Input value={description} onChangeText={setDescription} placeholder="Descrição" />
@@ -147,11 +170,13 @@ export default function ProductEditScreen() {
 
       <Row style={{ gap: 12 }}>
         <ButtonPrimary onPress={saveChanges} disabled={!description}>
-          <ButtonPrimaryText>Salvar alterações</ButtonPrimaryText>
+          <ButtonPrimaryText>{isNew ? 'Salvar' : 'Salvar alterações'}</ButtonPrimaryText>
         </ButtonPrimary>
-        <ButtonDestructive onPress={delProduct}>
-          <ButtonPrimaryText>Apagar produto</ButtonPrimaryText>
-        </ButtonDestructive>
+        {!isNew && (
+          <ButtonDestructive onPress={delProduct}>
+            <ButtonPrimaryText>Apagar produto</ButtonPrimaryText>
+          </ButtonDestructive>
+        )}
       </Row>
 
       {cameraOpen && (

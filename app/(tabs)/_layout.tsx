@@ -23,7 +23,8 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="products/new"
+        name="products/[id]"
+        initialParams={{ id: 'new' }}
         options={{
           title: 'Cadastrar Produto',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus.circle" color={color} />,
