@@ -36,6 +36,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="cart" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="sales/index"
+        options={{
+          title: 'Vendas',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet.rectangle" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

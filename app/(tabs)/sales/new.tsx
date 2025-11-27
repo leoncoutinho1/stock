@@ -1,3 +1,5 @@
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { store } from '@/src/store';
 import { syncToServer } from '@/src/sync';
 import { CameraView } from 'expo-camera';
@@ -11,11 +13,15 @@ export default function SaleNewScreen() {
   const [scanOpen, setScanOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [items, setItems] = useState<{ productId: string; quantity: number }[]>([]);
+  const textColor = useThemeColor({}, 'text');
+  const bgColor = useThemeColor({}, 'background');
+  const scheme = useColorScheme() ?? 'light';
+  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
 
   const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase();
     const entries = Object.entries(products ?? {}) as [string, any][];
-    if (!q) return entries;
+    if (!q) return [];
     return entries.filter(([, p]) =>
       String(p.description ?? '').toLowerCase().includes(q) || String(p.barcode ?? '').toLowerCase().includes(q)
     );
@@ -70,21 +76,21 @@ export default function SaleNewScreen() {
   };
 
   return (
-    <Container>
-      <Title>Registrar Venda</Title>
+    <Container style={{ backgroundColor: bgColor }}>
+      <Title style={{ color: textColor }}>Registrar Venda</Title>
       <Field>
-        <Label>Pesquisar por nome ou código</Label>
+        <Label style={{ color: textColor }}>Pesquisar por nome ou código</Label>
         <Input value={search} onChangeText={setSearch} placeholder="Digite o nome ou código" />
         <ProductsList>
           {filteredProducts.map(([id, p]) => (
-            <ProductRow key={id}>
-              <ProductTitle numberOfLines={1}>{p.description}</ProductTitle>
-              <ProductMeta>
+            <ProductRow key={id} style={{ backgroundColor: cardBg }}>
+              <ProductTitle style={{ color: textColor }} numberOfLines={1}>{p.description}</ProductTitle>
+              <ProductMeta style={{ color: textColor }}>
                 Código: {p.barcode} • Preço: {Number(p.price).toFixed(2)} • Estoque: {p.quantity}
               </ProductMeta>
               <Row style={{ justifyContent: 'flex-end' }}>
                 <Button onPress={() => addItemByProductId(id, 1)}>
-                  <ButtonText>Adicionar</ButtonText>
+                  <ButtonText style={{ color: textColor }}>Adicionar</ButtonText>
                 </Button>
               </Row>
             </ProductRow>
@@ -98,9 +104,9 @@ export default function SaleNewScreen() {
       </Field>
 
       <Field>
-        <Label>Itens da venda</Label>
+        <Label style={{ color: textColor }}>Itens da venda</Label>
         {items.length === 0 ? (
-          <Placeholder>Nenhum item adicionado</Placeholder>
+          <Placeholder style={{ color: textColor }}>Nenhum item adicionado</Placeholder>
         ) : (
           <Cart>
             {items.map((it) => {
@@ -108,9 +114,9 @@ export default function SaleNewScreen() {
               const price = Number(p?.price || 0);
               const subtotal = price * it.quantity;
               return (
-                <CartItem key={it.productId}>
-                  <CartTitle numberOfLines={1}>{p?.description}</CartTitle>
-                  <CartMeta>Preço: {price.toFixed(2)} • Subtotal: {subtotal.toFixed(2)}</CartMeta>
+                <CartItem key={it.productId} style={{ backgroundColor: cardBg }}>
+                  <CartTitle style={{ color: textColor }} numberOfLines={1}>{p?.description}</CartTitle>
+                  <CartMeta style={{ color: textColor }}>Preço: {price.toFixed(2)} • Subtotal: {subtotal.toFixed(2)}</CartMeta>
                   <Row style={{ gap: 8 }}>
                     <Input
                       style={{ flex: 1 }}
@@ -120,7 +126,7 @@ export default function SaleNewScreen() {
                       placeholder="Qtd"
                     />
                     <Button onPress={() => removeItem(it.productId)}>
-                      <ButtonText>Remover</ButtonText>
+                      <ButtonText style={{ color: textColor }}>Remover</ButtonText>
                     </Button>
                   </Row>
                 </CartItem>
@@ -130,9 +136,9 @@ export default function SaleNewScreen() {
         )}
       </Field>
 
-      <TotalRow>
-        <TotalLabel>Total</TotalLabel>
-        <TotalValue>R$ {total.toFixed(2)}</TotalValue>
+      <TotalRow style={{ backgroundColor: cardBg }}>
+        <TotalLabel style={{ color: textColor }}>Total</TotalLabel>
+        <TotalValue style={{ color: textColor }}>R$ {total.toFixed(2)}</TotalValue>
       </TotalRow>
 
       <ButtonPrimary onPress={saveSale} disabled={!items.length}>
@@ -153,7 +159,7 @@ export default function SaleNewScreen() {
               }}
             />
             <Button onPress={() => setScanOpen(false)}>
-              <ButtonText>Fechar</ButtonText>
+              <ButtonText style={{ color: textColor }}>Fechar</ButtonText>
             </Button>
           </ScannerContainer>
         </Modal>
