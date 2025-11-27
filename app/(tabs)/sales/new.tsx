@@ -8,54 +8,135 @@ import { useTable } from 'tinybase/ui-react';
 
 export default function SaleNewScreen() {
   const products = useTable('products') as Record<string, any>;
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [quantity, setQuantity] = useState('');
   const [scanOpen, setScanOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [items, setItems] = useState<{ productId: string; quantity: number }[]>([]);
 
-  const selected = useMemo(() => (selectedProductId ? products?.[selectedProductId] : undefined), [products, selectedProductId]);
+  const filteredProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const entries = Object.entries(products ?? {}) as [string, any][];
+    if (!q) return entries;
+    return entries.filter(([, p]) =>
+      String(p.description ?? '').toLowerCase().includes(q) || String(p.barcode ?? '').toLowerCase().includes(q)
+    );
+  }, [products, search]);
 
-  const findProductByBarcode = (code: string) => {
+  const total = useMemo(() => {
+    return items.reduce((sum, it) => {
+      const p = products?.[it.productId];
+      const price = Number(p?.price || 0);
+      return sum + price * it.quantity;
+    }, 0);
+  }, [items, products]);
+
+  const addItemByProductId = (productId: string, qty = 1) => {
+    setItems((prev) => {
+      const idx = prev.findIndex((i) => i.productId === productId);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], quantity: next[idx].quantity + qty };
+        return next;
+      }
+      return [...prev, { productId, quantity: qty }];
+    });
+  };
+
+  const removeItem = (productId: string) => {
+    setItems((prev) => prev.filter((i) => i.productId !== productId));
+  };
+
+  const updateItemQty = (productId: string, qty: number) => {
+    setItems((prev) => prev.map((i) => (i.productId === productId ? { ...i, quantity: Math.max(qty, 0) } : i)));
+  };
+
+  const addByBarcode = (code: string) => {
     const entry = Object.entries(products ?? {}).find(([, p]) => String(p.barcode) === String(code));
-    if (entry) setSelectedProductId(entry[0]);
+    if (entry) addItemByProductId(entry[0], 1);
   };
 
   const saveSale = async () => {
-    if (!selectedProductId) return;
-    const qty = Number(quantity) || 0;
-    const id = Crypto.randomUUID();
-    store.setRow('sales', id, { productId: selectedProductId, quantity: qty, timestamp: Date.now() });
-    const current = Number(store.getCell('products', selectedProductId, 'quantity') || 0);
-    store.setCell('products', selectedProductId, 'quantity', Math.max(current - qty, 0));
+    if (!items.length) return;
+    for (const it of items) {
+      const qty = Math.max(Number(it.quantity) || 0, 0);
+      if (!qty) continue;
+      const id = Crypto.randomUUID();
+      store.setRow('sales', id, { productId: it.productId, quantity: qty, timestamp: Date.now() });
+      const current = Number(store.getCell('products', it.productId, 'quantity') || 0);
+      store.setCell('products', it.productId, 'quantity', Math.max(current - qty, 0));
+    }
     await syncToServer();
-    setQuantity('');
+    setItems([]);
+    setSearch('');
   };
 
   return (
     <Container>
       <Title>Registrar Venda</Title>
       <Field>
-        <Label>Produto</Label>
-        {selected ? (
-          <Selected>
-            <SelectedTitle>{selected.description}</SelectedTitle>
-            <SelectedText>Estoque: {selected.quantity}</SelectedText>
-            <SelectedText>Preço: {Number(selected.price).toFixed(2)}</SelectedText>
-          </Selected>
-        ) : (
-          <Placeholder>Nenhum produto selecionado</Placeholder>
-        )}
+        <Label>Pesquisar por nome ou código</Label>
+        <Input value={search} onChangeText={setSearch} placeholder="Digite o nome ou código" />
+        <ProductsList>
+          {filteredProducts.map(([id, p]) => (
+            <ProductRow key={id}>
+              <ProductTitle numberOfLines={1}>{p.description}</ProductTitle>
+              <ProductMeta>
+                Código: {p.barcode} • Preço: {Number(p.price).toFixed(2)} • Estoque: {p.quantity}
+              </ProductMeta>
+              <Row style={{ justifyContent: 'flex-end' }}>
+                <Button onPress={() => addItemByProductId(id, 1)}>
+                  <ButtonText>Adicionar</ButtonText>
+                </Button>
+              </Row>
+            </ProductRow>
+          ))}
+        </ProductsList>
         <Row>
           <Button onPress={() => setScanOpen(true)}>
             <ButtonText>Escanear código</ButtonText>
           </Button>
         </Row>
       </Field>
+
       <Field>
-        <Label>Quantidade</Label>
-        <Input keyboardType="number-pad" value={quantity} onChangeText={setQuantity} placeholder="0" />
+        <Label>Itens da venda</Label>
+        {items.length === 0 ? (
+          <Placeholder>Nenhum item adicionado</Placeholder>
+        ) : (
+          <Cart>
+            {items.map((it) => {
+              const p = products?.[it.productId];
+              const price = Number(p?.price || 0);
+              const subtotal = price * it.quantity;
+              return (
+                <CartItem key={it.productId}>
+                  <CartTitle numberOfLines={1}>{p?.description}</CartTitle>
+                  <CartMeta>Preço: {price.toFixed(2)} • Subtotal: {subtotal.toFixed(2)}</CartMeta>
+                  <Row style={{ gap: 8 }}>
+                    <Input
+                      style={{ flex: 1 }}
+                      keyboardType="number-pad"
+                      value={String(it.quantity)}
+                      onChangeText={(t) => updateItemQty(it.productId, Number(t) || 0)}
+                      placeholder="Qtd"
+                    />
+                    <Button onPress={() => removeItem(it.productId)}>
+                      <ButtonText>Remover</ButtonText>
+                    </Button>
+                  </Row>
+                </CartItem>
+              );
+            })}
+          </Cart>
+        )}
       </Field>
-      <ButtonPrimary onPress={saveSale} disabled={!selectedProductId || !quantity}>
-        <ButtonPrimaryText>Salvar</ButtonPrimaryText>
+
+      <TotalRow>
+        <TotalLabel>Total</TotalLabel>
+        <TotalValue>R$ {total.toFixed(2)}</TotalValue>
+      </TotalRow>
+
+      <ButtonPrimary onPress={saveSale} disabled={!items.length}>
+        <ButtonPrimaryText>Salvar venda</ButtonPrimaryText>
       </ButtonPrimary>
 
       {scanOpen && (
@@ -67,10 +148,10 @@ export default function SaleNewScreen() {
                 barcodeTypes: ['qr', 'ean13', 'code128'],
               }}
               onBarcodeScanned={({ data }) => {
-                findProductByBarcode(String(data));
+                addByBarcode(String(data));
                 setScanOpen(false);
-              }}>
-            </CameraView>
+              }}
+            />
             <Button onPress={() => setScanOpen(false)}>
               <ButtonText>Fechar</ButtonText>
             </Button>
@@ -154,18 +235,60 @@ const ScannerContainer = styled.View`
   flex: 1;
 `;
 
-const Selected = styled.View`
+const ProductsList = styled.View``;
+
+const ProductRow = styled.View`
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 8px;
+`;
+
+const ProductTitle = styled.Text`
+  font-size: 16px;
+  font-weight: 500;
+`;
+
+const ProductMeta = styled.Text`
+  font-size: 12px;
+  color: #555;
+`;
+
+const Cart = styled.View``;
+
+const CartItem = styled.View`
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 8px;
+`;
+
+const CartTitle = styled.Text`
+  font-size: 16px;
+  font-weight: 500;
+`;
+
+const CartMeta = styled.Text`
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 8px;
+`;
+
+const TotalRow = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
   padding: 12px;
   background: #fff;
   border-radius: 8px;
 `;
 
-const SelectedTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 500;
+const TotalLabel = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
 `;
 
-const SelectedText = styled.Text`
-  font-size: 14px;
-  color: #444;
+const TotalValue = styled.Text`
+  font-size: 20px;
+  font-weight: 700;
 `;

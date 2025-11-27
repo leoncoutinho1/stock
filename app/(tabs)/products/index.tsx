@@ -1,16 +1,36 @@
+import { store } from '@/src/store';
 import { Product } from '@/src/types';
+import { File } from 'expo-file-system';
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, FlatListProps, Image } from 'react-native';
+import { Alert, FlatList, FlatListProps, Image } from 'react-native';
 import styled from 'styled-components/native';
 import { useTable } from 'tinybase/ui-react';
 
 type ListItem = [string, Product];
 
 export default function ProductsListScreen() {
-  // const products = useTable('products') as Record<string, any>;
-  // const data = Object.entries(products ?? {});
+  const router = useRouter();
   const products = useTable('products') as Record<string, Product> | null;
   const data: ListItem[] = Object.entries(products ?? {}) as ListItem[];
+
+  const confirmDelete = (id: string, image?: string) => {
+    Alert.alert('Remover produto', 'Deseja remover este produto?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: async () => {
+          store.delRow('products', id);
+          if (image) {
+            try { 
+              new File(image).delete();
+            } catch {}
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <Container>
@@ -21,15 +41,20 @@ export default function ProductsListScreen() {
         renderItem={({ item }) => {
           const [id, p] = item;
           return (
-            <Item>
-              {p.image ? <ProductImage source={{ uri: p.image }} /> : null}
-              <ItemInfo>
-                <ItemTitle>{p.description}</ItemTitle>
-                <ItemText>Código: {p.barcode}</ItemText>
-                <ItemText>Preço: {Number(p.price).toFixed(2)}</ItemText>
-                <ItemText>Qtd: {p.quantity}</ItemText>
-              </ItemInfo>
-            </Item>
+            <ItemTouchable
+              onPress={() => router.push({ pathname: '/(tabs)/products/[id]', params: { id } })}
+              onLongPress={() => confirmDelete(id, p.image)}
+            >
+              <Item>
+                {p.image ? <ProductImage source={{ uri: p.image }} /> : null}
+                <ItemInfo>
+                  <ItemTitle>{p.description}</ItemTitle>
+                  <ItemText>Código: {p.barcode}</ItemText>
+                  <ItemText>Preço: {Number(p.price).toFixed(2)}</ItemText>
+                  <ItemText>Qtd: {p.quantity}</ItemText>
+                </ItemInfo>
+              </Item>
+            </ItemTouchable>
           );
         }}
       />
@@ -50,6 +75,8 @@ const Title = styled.Text`
 
 //const List = styled.FlatList`` as unknown as typeof styled.FlatList;
 const List = styled(FlatList as new (props: FlatListProps<ListItem>) => FlatList<ListItem>)`` as unknown as typeof FlatList<ListItem>;
+
+const ItemTouchable = styled.TouchableOpacity``;
 
 const Item = styled.View`
   flex-direction: row;
