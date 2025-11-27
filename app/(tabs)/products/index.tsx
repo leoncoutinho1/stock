@@ -12,21 +12,16 @@ type ListItem = [string, Product];
 export default function ProductsListScreen() {
   const router = useRouter();
   const products = useTable('products') as Record<string, Product> | null;
-  const data: ListItem[] = Object.entries(products ?? {}) as ListItem[];
+  const data: ListItem[] = (Object.entries(products ?? {}) as ListItem[]).filter(([, p]) => p?.ind_active !== false);
 
   const confirmDelete = (id: string, image?: string) => {
-    Alert.alert('Remover produto', 'Deseja remover este produto?', [
+    Alert.alert('Desativar produto', 'Deseja desativar este produto?', [
       { text: 'Cancelar', style: 'cancel' },
       {
-        text: 'Remover',
+        text: 'Desativar',
         style: 'destructive',
         onPress: async () => {
-          store.delRow('products', id);
-          if (image) {
-            try { 
-              new File(image).delete();
-            } catch {}
-          }
+          store.setCell('products', id, 'ind_active', false);
         },
       },
     ]);

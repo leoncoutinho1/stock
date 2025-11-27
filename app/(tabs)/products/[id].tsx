@@ -52,6 +52,7 @@ export default function ProductEditScreen() {
       quantity: Number(quantity) || 0,
       barcode: barcode.trim(),
       image: imageUri,
+      ind_active: row?.ind_active !== false,
     };
 
     if (isNew) {
@@ -71,18 +72,14 @@ export default function ProductEditScreen() {
   };
 
   const delProduct = async () => {
-    Alert.alert('Remover produto', 'Deseja remover este produto?', [
+    Alert.alert('Desativar produto', 'Deseja desativar este produto?', [
       { text: 'Cancelar', style: 'cancel' },
       {
-        text: 'Remover',
+        text: 'Desativar',
         style: 'destructive',
         onPress: async () => {
-          store.delRow('products', String(id));
-          if (imageUri) {
-            try { 
-              new File(imageUri).delete();
-            } catch {}
-          }
+          store.setCell('products', String(id), 'ind_active', false);
+          await syncToServer();
           router.replace('/(tabs)/products/index');
         },
       },

@@ -20,7 +20,7 @@ export default function SaleNewScreen() {
 
   const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const entries = Object.entries(products ?? {}) as [string, any][];
+    const entries = (Object.entries(products ?? {}) as [string, any][])?.filter(([, p]) => p?.ind_active !== false);
     if (!q) return [];
     return entries.filter(([, p]) =>
       String(p.description ?? '').toLowerCase().includes(q) || String(p.barcode ?? '').toLowerCase().includes(q)
@@ -56,7 +56,7 @@ export default function SaleNewScreen() {
   };
 
   const addByBarcode = (code: string) => {
-    const entry = Object.entries(products ?? {}).find(([, p]) => String(p.barcode) === String(code));
+    const entry = Object.entries(products ?? {}).find(([, p]) => p?.ind_active !== false && String(p.barcode) === String(code));
     if (entry) addItemByProductId(entry[0], 1);
   };
 
@@ -92,7 +92,7 @@ export default function SaleNewScreen() {
               </ProductMeta>
               <Row style={{ justifyContent: 'flex-end' }}>
                 <Button onPress={() => addItemByProductId(id, 1)}>
-                  <ButtonText style={{ color: textColor }}>Adicionar</ButtonText>
+                  <ButtonText>Adicionar</ButtonText>
                 </Button>
               </Row>
             </ProductRow>

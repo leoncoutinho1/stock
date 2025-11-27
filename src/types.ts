@@ -6,6 +6,7 @@ export type Product = {
   quantity: number;
   barcode: string;
   image: string;
+  ind_active: boolean;
 };
 
 export type Sale = {
