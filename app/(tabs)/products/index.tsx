@@ -1,9 +1,11 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { store } from '@/src/store';
+import { syncToServer } from '@/src/sync';
 import { Product } from '@/src/types';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, FlatList, FlatListProps, Image, useColorScheme } from 'react-native';
+import { Alert, FlatList, FlatListProps, Image, useColorScheme, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useTable } from 'tinybase/ui-react';
 
@@ -26,6 +28,7 @@ export default function ProductsListScreen() {
         style: 'destructive',
         onPress: async () => {
           store.setCell('products', id, 'ind_active', false);
+          await syncToServer();
         },
       },
     ]);
@@ -33,7 +36,10 @@ export default function ProductsListScreen() {
 
   return (
     <Container style={{ backgroundColor: bgColor }}>
-      <Title style={{ color: textColor }}>Produtos</Title>
+      <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Title style={{ color: textColor }}>Produtos</Title>
+        <Ionicons onPress={() => router.push('/(tabs)/products/[id]')} name={'add-circle-outline'} size={32} color={textColor} />
+      </View>
       <List
         data={data}
         keyExtractor={(item) => item[0]}
@@ -43,8 +49,10 @@ export default function ProductsListScreen() {
             <ItemTouchable
               onPress={() => router.push({ pathname: '/(tabs)/products/[id]', params: { id } })}
               onLongPress={() => confirmDelete(id, p.image)}
+              
             >
-              <Item>
+              <Item
+                style={{ backgroundColor: p.ind_active ? '' : '#fd7575ff' }}>
                 {p.image ? <ProductImage source={{ uri: p.image }} /> : null}
                 <ItemInfo>
                   <ItemTitle>{p.description}</ItemTitle>

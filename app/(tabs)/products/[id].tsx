@@ -25,6 +25,7 @@ export default function ProductEditScreen() {
   const [quantity, setQuantity] = useState('');
   const [barcode, setBarcode] = useState('');
   const [imageUri, setImageUri] = useState('');
+  const [active, setActive] = useState<boolean>(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
@@ -39,6 +40,7 @@ export default function ProductEditScreen() {
       setQuantity(String(row.quantity ?? ''));
       setBarcode(String(row.barcode ?? ''));
       setImageUri(String(row.image ?? ''));
+      setActive(row.ind_active);
     } else if (isNew) {
       setDescription('');
       setCost('');
@@ -46,6 +48,7 @@ export default function ProductEditScreen() {
       setQuantity('');
       setBarcode('');
       setImageUri('');
+      setActive(true);
     }
   }, [id, row, isNew]);
 
@@ -57,7 +60,7 @@ export default function ProductEditScreen() {
       quantity: Number(quantity) || 0,
       barcode: barcode.trim(),
       image: imageUri,
-      ind_active: row?.ind_active !== false,
+      ind_active: active,
     };
 
     if (isNew) {

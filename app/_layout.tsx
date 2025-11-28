@@ -1,10 +1,11 @@
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { createPersister, store } from '@/src/store';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Provider, useCreatePersister } from 'tinybase/ui-react';
-import { store, createPersister } from '@/src/store';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -17,11 +18,12 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Provider store={store}>
         <Persistence />
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="auto" />
+        <SafeAreaView style={{ flex: 1 }} >
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+        </SafeAreaView>
       </Provider>
     </ThemeProvider>
   );
@@ -30,6 +32,13 @@ export default function RootLayout() {
 function Persistence() {
   useCreatePersister(store, () => createPersister(), [], async (persister) => {
     await persister.startAutoLoad();
+    const products = store.getTable?.('products') ?? {};
+    for (const id of Object.keys(products)) {
+      const active = store.getCell('products', id, 'ind_active');
+      if (typeof active === 'undefined') {
+        store.setCell('products', id, 'ind_active', true);
+      }
+    }
     await persister.startAutoSave();
   });
   return null;

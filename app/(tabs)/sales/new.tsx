@@ -128,7 +128,7 @@ export default function SaleNewScreen() {
                       placeholder="Qtd"
                     />
                     <Button onPress={() => removeItem(it.productId)}>
-                      <ButtonText style={{ color: textColor }}>Remover</ButtonText>
+                      <ButtonText>Remover</ButtonText>
                     </Button>
                   </Row>
                 </CartItem>
@@ -144,7 +144,7 @@ export default function SaleNewScreen() {
       </TotalRow>
 
       <ButtonPrimary onPress={saveSale} disabled={!items.length}>
-        <ButtonPrimaryText>Salvar venda</ButtonPrimaryText>
+        <ButtonPrimaryText>Salvar</ButtonPrimaryText>
       </ButtonPrimary>
 
       {scanOpen && (

@@ -1,6 +1,9 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { View } from 'react-native';
 import styled from 'styled-components/native';
 import { useTable } from 'tinybase/ui-react';
 
@@ -59,7 +62,10 @@ export default function SalesListScreen() {
 
   return (
     <ScrollContainer style={{ backgroundColor: bgColor }} contentContainerStyle={{ padding: 16 }}>
-      <Title style={{ color: textColor }}>Vendas realizadas</Title>
+      <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Title style={{ color: textColor }}>Vendas</Title>
+        <Ionicons onPress={() => router.push('/(tabs)/sales/new')} name={'add-circle-outline'} size={32} color={textColor} />
+      </View>
       <FilterRow>
         {(['hoje', 'semana', 'mês'] as const).map((p) => (
           <FilterButton
