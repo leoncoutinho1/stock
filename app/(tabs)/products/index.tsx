@@ -1,9 +1,9 @@
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { store } from '@/src/store';
 import { Product } from '@/src/types';
-import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, FlatList, FlatListProps, Image } from 'react-native';
+import { Alert, FlatList, FlatListProps, Image, useColorScheme } from 'react-native';
 import styled from 'styled-components/native';
 import { useTable } from 'tinybase/ui-react';
 
@@ -11,6 +11,10 @@ type ListItem = [string, Product];
 
 export default function ProductsListScreen() {
   const router = useRouter();
+  const textColor = useThemeColor({}, 'text');
+  const bgColor = useThemeColor({}, 'background');
+  const scheme = useColorScheme() ?? 'light';
+  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
   const products = useTable('products') as Record<string, Product> | null;
   const data: ListItem[] = (Object.entries(products ?? {}) as ListItem[]).filter(([, p]) => p?.ind_active !== false);
 
@@ -28,8 +32,8 @@ export default function ProductsListScreen() {
   };
 
   return (
-    <Container>
-      <Title>Produtos</Title>
+    <Container style={{ backgroundColor: bgColor }}>
+      <Title style={{ color: textColor }}>Produtos</Title>
       <List
         data={data}
         keyExtractor={(item) => item[0]}

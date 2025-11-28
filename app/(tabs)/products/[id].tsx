@@ -1,3 +1,4 @@
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { store } from '@/src/store';
 import { syncToServer } from '@/src/sync';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -5,12 +6,16 @@ import * as Crypto from 'expo-crypto';
 import { File, Paths } from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, useColorScheme } from 'react-native';
 import styled from 'styled-components/native';
 import { useRow } from 'tinybase/ui-react';
 
 export default function ProductEditScreen() {
   const router = useRouter();
+  const textColor = useThemeColor({}, 'text');
+  const bgColor = useThemeColor({}, 'background');
+  const scheme = useColorScheme() ?? 'light';
+  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
   const { id } = useLocalSearchParams<{ id: string }>();
   const row = useRow('products', String(id)) as any;
   const isNew = String(id) === 'new';
@@ -122,30 +127,30 @@ export default function ProductEditScreen() {
   };
 
   return (
-    <Container>
-      <Title>{isNew ? 'Cadastrar Produto' : 'Editar Produto'}</Title>
+    <Container style={{ backgroundColor: bgColor }}>
+      <Title style={{ color: textColor }}>{isNew ? 'Cadastrar Produto' : 'Editar Produto'}</Title>
       <Field>
-        <Label>Descrição</Label>
+        <Label style={{ color: textColor }}>Descrição</Label>
         <Input value={description} onChangeText={setDescription} placeholder="Descrição" />
       </Field>
       <Row>
         <Field style={{ flex: 1 }}>
-          <Label>Custo</Label>
+          <Label style={{ color: textColor }}>Custo</Label>
           <Input keyboardType="decimal-pad" value={cost} onChangeText={setCost} placeholder="0.00" />
         </Field>
         <Spacer />
         <Field style={{ flex: 1 }}>
-          <Label>Preço</Label>
+          <Label style={{ color: textColor }}>Preço</Label>
           <Input keyboardType="decimal-pad" value={price} onChangeText={setPrice} placeholder="0.00" />
         </Field>
       </Row>
       <Field>
-        <Label>Quantidade</Label>
+        <Label style={{ color: textColor }}>Quantidade</Label>
         <Input keyboardType="number-pad" value={quantity} onChangeText={setQuantity} placeholder="0" />
       </Field>
       <Row>
         <Field style={{ flex: 1 }}>
-          <Label>Código de barras</Label>
+          <Label style={{ color: textColor }}>Código de barras</Label>
           <Input value={barcode} onChangeText={setBarcode} placeholder="Digite ou escaneie" />
         </Field>
         <Spacer />
@@ -167,11 +172,11 @@ export default function ProductEditScreen() {
 
       <Row style={{ gap: 12 }}>
         <ButtonPrimary onPress={saveChanges} disabled={!description}>
-          <ButtonPrimaryText>{isNew ? 'Salvar' : 'Salvar alterações'}</ButtonPrimaryText>
+          <ButtonPrimaryText>Salvar</ButtonPrimaryText>
         </ButtonPrimary>
         {!isNew && (
           <ButtonDestructive onPress={delProduct}>
-            <ButtonPrimaryText>Apagar produto</ButtonPrimaryText>
+            <ButtonPrimaryText>Excluir</ButtonPrimaryText>
           </ButtonDestructive>
         )}
       </Row>
