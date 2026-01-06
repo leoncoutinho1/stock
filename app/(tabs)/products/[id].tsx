@@ -1,344 +1,697 @@
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { store } from '@/src/store';
-import { syncToServer } from '@/src/sync';
+import { productApi } from '@/src/api/product';
+import { listCategories, Category } from '@/src/api/category';
+import { ProductDto } from '@/src/api/types';
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as Crypto from 'expo-crypto';
-import { File, Paths } from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, useColorScheme } from 'react-native';
-import styled from 'styled-components/native';
-import { useRow } from 'tinybase/ui-react';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-export default function ProductEditScreen() {
+export default function ProductFormScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const scheme = useColorScheme() ?? 'light';
   const textColor = useThemeColor({}, 'text');
   const bgColor = useThemeColor({}, 'background');
-  const scheme = useColorScheme() ?? 'light';
   const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const row = useRow('products', String(id)) as any;
-  const isNew = String(id) === 'new';
+  const borderColor = scheme === 'dark' ? '#333' : '#e0e0e0';
+
+  const isNew = id === 'new';
+
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [description, setDescription] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cost, setCost] = useState('');
+  const [profitMargin, setProfitMargin] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [barcode, setBarcode] = useState('');
-  const [imageUri, setImageUri] = useState('');
-  const [active, setActive] = useState<boolean>(false);
-  const [cameraOpen, setCameraOpen] = useState(false);
+  const [barcodes, setBarcodes] = useState<string[]>(['']); // Array of barcodes, starts with one empty
   const [scanOpen, setScanOpen] = useState(false);
+  const [scanningIndex, setScanningIndex] = useState(0); // Track which barcode is being scanned
   const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = React.useRef<CameraView | null>(null);
-  const scannerRef = React.useRef<CameraView | null>(null);
+
+  const resetForm = () => {
+    setDescription('');
+    setCategoryId('');
+    setCost('');
+    setProfitMargin('');
+    setPrice('');
+    setQuantity('');
+    setBarcodes(['']);
+  };
 
   useEffect(() => {
-    if (row && !isNew) {
-      setDescription(String(row.description ?? ''));
-      setCost(String(row.cost ?? ''));
-      setPrice(String(row.price ?? ''));
-      setQuantity(String(row.quantity ?? ''));
-      setBarcode(String(row.barcode ?? ''));
-      setImageUri(String(row.image ?? ''));
-      setActive(row.ind_active);
-    } else if (isNew) {
-      setDescription('');
-      setCost('');
-      setPrice('');
-      setQuantity('');
-      setBarcode('');
-      setImageUri('');
-      setActive(true);
-    }
-  }, [id, row, isNew]);
-
-  const saveChanges = async () => {
-    const payload = {
-      description: description.trim(),
-      cost: Number(cost) || 0,
-      price: Number(price) || 0,
-      quantity: Number(quantity) || 0,
-      barcode: barcode.trim(),
-      image: imageUri,
-      ind_active: active,
-    };
-
-    if (isNew) {
-      const newId = Crypto.randomUUID();
-      store.setRow('products', newId, payload);
-      await syncToServer();
-      setDescription('');
-      setCost('');
-      setPrice('');
-      setQuantity('');
-      setBarcode('');
-      setImageUri('');
+    loadCategories();
+    if (!isNew) {
+      loadProduct();
     } else {
-      store.setRow('products', String(id), payload);
-      router.back();
+      resetForm();
+      setInitialLoading(false);
+    }
+  }, [id]);
+
+  const loadCategories = async () => {
+    try {
+      const result = await listCategories({ limit: 1000 });
+      setCategories(result.data || []);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
     }
   };
 
-  const delProduct = async () => {
-    Alert.alert('Desativar produto', 'Deseja desativar este produto?', [
+  const loadProduct = async () => {
+    try {
+      console.log('Loading product with id:', id);
+      const response = await productApi.getProduct(id);
+      console.log('Product response:', response);
+
+      // Handle ErrorOr response format from backend
+      let product: ProductDto | null = null;
+
+      if (response && typeof response === 'object') {
+        // Check if it's an ErrorOr with errors
+        if ('isError' in response && (response as any).isError) {
+          const errors = (response as any).errors || [];
+          const errorMessage = errors.length > 0 ? errors[0].description : 'Produto não encontrado';
+          throw new Error(errorMessage);
+        }
+
+        // Check if it's wrapped in a value property (ErrorOr success)
+        if ('value' in response) {
+          product = (response as any).value;
+        } else {
+          // Direct product object
+          product = response as ProductDto;
+        }
+      }
+
+      if (!product || !product.id) {
+        throw new Error('Produto não encontrado');
+      }
+
+      console.log('Product data:', product);
+
+      setDescription(product.description || '');
+      setCategoryId(product.categoryId || '');
+      setCost(product.cost?.toString() || '');
+      setPrice(product.price?.toString() || '');
+      setQuantity(product.quantity?.toString() || '');
+
+      // Load all barcodes, or start with one empty field
+      setBarcodes(product.barcodes && product.barcodes.length > 0 ? product.barcodes : ['']);
+
+      // Calcular margem de lucro se custo e preço existirem
+      if (product.cost && product.price && product.cost > 0) {
+        const margin = ((product.price - product.cost) / product.cost) * 100;
+        setProfitMargin(margin.toFixed(2));
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar produto:', error);
+      Alert.alert('Erro', error.message || 'Não foi possível carregar o produto');
+      router.back();
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
+  const handleCostChange = (value: string) => {
+    setCost(value);
+
+    // Se houver margem de lucro definida, recalcular o preço
+    if (value && profitMargin) {
+      const costValue = parseFloat(value);
+      const marginValue = parseFloat(profitMargin);
+
+      if (!isNaN(costValue) && !isNaN(marginValue) && costValue > 0) {
+        const calculatedPrice = costValue * (1 + marginValue / 100);
+        setPrice(calculatedPrice.toFixed(2));
+      }
+    }
+  };
+
+  const handleProfitMarginChange = (value: string) => {
+    setProfitMargin(value);
+
+    // Calcular preço baseado no custo e margem
+    if (cost && value) {
+      const costValue = parseFloat(cost);
+      const marginValue = parseFloat(value);
+
+      if (!isNaN(costValue) && !isNaN(marginValue) && costValue > 0) {
+        const calculatedPrice = costValue * (1 + marginValue / 100);
+        setPrice(calculatedPrice.toFixed(2));
+      }
+    }
+  };
+
+  const handlePriceChange = (value: string) => {
+    setPrice(value);
+
+    // Recalcular margem de lucro se custo estiver preenchido
+    if (cost && value) {
+      const costValue = parseFloat(cost);
+      const priceValue = parseFloat(value);
+
+      if (!isNaN(costValue) && !isNaN(priceValue) && costValue > 0) {
+        const margin = ((priceValue - costValue) / costValue) * 100;
+        setProfitMargin(margin.toFixed(2));
+      }
+    }
+  };
+
+  // Barcode management functions
+  const handleBarcodeChange = (index: number, value: string) => {
+    const newBarcodes = [...barcodes];
+    newBarcodes[index] = value;
+    setBarcodes(newBarcodes);
+  };
+
+  const addBarcode = () => {
+    setBarcodes([...barcodes, '']);
+  };
+
+  const removeBarcode = (index: number) => {
+    if (barcodes.length > 1) {
+      const newBarcodes = barcodes.filter((_, i) => i !== index);
+      setBarcodes(newBarcodes);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!description.trim()) {
+      Alert.alert('Atenção', 'Por favor, informe a descrição do produto');
+      return;
+    }
+
+    if (!categoryId) {
+      Alert.alert('Atenção', 'Por favor, selecione uma categoria');
+      return;
+    }
+
+    if (!cost || parseFloat(cost) <= 0) {
+      Alert.alert('Atenção', 'Por favor, informe um custo válido');
+      return;
+    }
+
+    if (!price || parseFloat(price) <= 0) {
+      Alert.alert('Atenção', 'Por favor, informe um preço válido');
+      return;
+    }
+
+    // Validate first barcode is required
+    if (!barcodes[0] || !barcodes[0].trim()) {
+      Alert.alert('Atenção', 'Por favor, informe pelo menos um código de barras');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Filter out empty barcodes and trim
+      const validBarcodes = barcodes
+        .map(b => b.trim())
+        .filter(b => b.length > 0);
+
+      const payload = {
+        id: id === 'new' ? null : id,
+        description: description.trim(),
+        categoryId: categoryId,
+        cost: parseFloat(cost) || 0,
+        price: parseFloat(price) || 0,
+        quantity: parseFloat(quantity) || 0,
+        barcodes: validBarcodes,
+        ind_active: true,
+      };
+
+      if (isNew) {
+        await productApi.createProduct(payload);
+        Alert.alert('Sucesso', 'Produto criado com sucesso!', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
+      } else {
+        payload.id = id;
+        await productApi.updateProduct(id, payload);
+        Alert.alert('Sucesso', 'Produto atualizado com sucesso!', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error);
+      Alert.alert('Erro', 'Não foi possível salvar o produto');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = () => {
+    Alert.alert('Confirmar exclusão', 'Deseja realmente desativar este produto?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Desativar',
         style: 'destructive',
         onPress: async () => {
-          store.setCell('products', String(id), 'ind_active', false);
-          await syncToServer();
-          router.replace('/(tabs)/products/index');
+          try {
+            await productApi.deactivateProduct(id);
+            Alert.alert('Sucesso', 'Produto desativado com sucesso!', [
+              { text: 'OK', onPress: () => router.replace('/(tabs)/products/index') }
+            ]);
+          } catch (error) {
+            console.error('Erro ao desativar produto:', error);
+            Alert.alert('Erro', 'Não foi possível desativar o produto');
+          }
         },
       },
     ]);
   };
 
-  async function saveImage(capturedUri: string) {
-    try {
-      // nome único
-      const fileName = `foto_${Crypto.randomUUID()}.jpg`;
-
-      // cria um File apontando para o destino no documentDirectory
-      const destinationFile = new File(Paths.document, fileName);
-
-      // cria o arquivo no diretório (somente o path; o conteúdo virá via copy)
-      await destinationFile.create();
-
-      console.log("Imagem salva em:", destinationFile.uri);
-
-      return destinationFile.uri;
-    } catch (error) {
-      console.error("Erro ao salvar imagem:", error);
-      throw error;
+  const openScanner = async () => {
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        Alert.alert('Permissão negada', 'É necessário permitir o acesso à câmera para escanear códigos de barras');
+        return;
+      }
     }
-  }
-
-  const takePhoto = async (
-    camera: any
-  ) => {
-    try {
-      const photo = await camera.takePictureAsync({ quality: 0.8, base64: false });
-      if (!photo) return;
-
-      await saveImage(photo.uri);
-      setImageUri(photo.uri)
-      setCameraOpen(false)
-    } catch (err) {
-      console.error("Erro ao salvar foto:", err);
-    }
+    setScanOpen(true);
   };
 
+  if (initialLoading) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: bgColor }]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
-    <Container style={{ backgroundColor: bgColor }}>
-      <Title style={{ color: textColor }}>{isNew ? 'Cadastrar Produto' : 'Editar Produto'}</Title>
-      <Field>
-        <Label style={{ color: textColor }}>Descrição</Label>
-        <Input value={description} onChangeText={setDescription} placeholder="Descrição" />
-      </Field>
-      <Row>
-        <Field style={{ flex: 1 }}>
-          <Label style={{ color: textColor }}>Custo</Label>
-          <Input keyboardType="decimal-pad" value={cost} onChangeText={setCost} placeholder="0.00" />
-        </Field>
-        <Spacer />
-        <Field style={{ flex: 1 }}>
-          <Label style={{ color: textColor }}>Preço</Label>
-          <Input keyboardType="decimal-pad" value={price} onChangeText={setPrice} placeholder="0.00" />
-        </Field>
-      </Row>
-      <Field>
-        <Label style={{ color: textColor }}>Quantidade</Label>
-        <Input keyboardType="number-pad" value={quantity} onChangeText={setQuantity} placeholder="0" />
-      </Field>
-      <Row>
-        <Field style={{ flex: 1 }}>
-          <Label style={{ color: textColor }}>Código de barras</Label>
-          <Input value={barcode} onChangeText={setBarcode} placeholder="Digite ou escaneie" />
-        </Field>
-        <Spacer />
-        <Button onPress={() => setScanOpen(true)}>
-          <ButtonText>Escanear</ButtonText>
-        </Button>
-      </Row>
-      <ImageRow>
-        {imageUri ? <ProductImage source={{ uri: imageUri }} /> : <Placeholder>Sem imagem</Placeholder>}
-        <Button onPress={async () => {
-          if (!permission?.granted) {
-            await requestPermission();
-          }
-          setCameraOpen(true);
-        }}>
-          <ButtonText>Tirar foto</ButtonText>
-        </Button>
-      </ImageRow>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: bgColor }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={textColor} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: textColor }]}>
+          {isNew ? 'Novo Produto' : 'Editar Produto'}
+        </Text>
+      </View>
 
-      <Row style={{ gap: 12 }}>
-        <ButtonPrimary onPress={saveChanges} disabled={!description}>
-          <ButtonPrimaryText>Salvar</ButtonPrimaryText>
-        </ButtonPrimary>
-        {!isNew && (
-          <ButtonDestructive onPress={delProduct}>
-            <ButtonPrimaryText>Excluir</ButtonPrimaryText>
-          </ButtonDestructive>
-        )}
-      </Row>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Descrição */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <Text style={[styles.label, { color: textColor }]}>Descrição *</Text>
+          <TextInput
+            style={[styles.input, { color: textColor, borderColor }]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Digite a descrição do produto"
+            placeholderTextColor={textColor + '80'}
+            autoFocus={isNew}
+          />
+        </View>
 
-      {cameraOpen && (
-        <Modal>
-          <CameraView 
-            style={{ flex: 1 }} 
-            ref={(ref) => {
-              cameraRef.current = ref;
+        {/* Categoria */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <Text style={[styles.label, { color: textColor }]}>Categoria *</Text>
+          {categories.length === 0 ? (
+            <Text style={[styles.helperText, { color: textColor, opacity: 0.5 }]}>
+              Nenhuma categoria cadastrada. Cadastre uma categoria em Configurações.
+            </Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.categoryButton,
+                    {
+                      backgroundColor: categoryId === category.id ? '#007AFF' : cardBg,
+                      borderColor: categoryId === category.id ? '#007AFF' : borderColor,
+                    }
+                  ]}
+                  onPress={() => setCategoryId(category.id)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryButtonText,
+                      { color: categoryId === category.id ? '#fff' : textColor }
+                    ]}
+                  >
+                    {category.description}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* Custo e Margem de Lucro */}
+        <View style={styles.row}>
+          <View style={[styles.card, styles.halfCard, { backgroundColor: cardBg, borderColor }]}>
+            <Text style={[styles.label, { color: textColor }]}>Custo *</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor }]}
+              value={cost}
+              onChangeText={handleCostChange}
+              placeholder="0.00"
+              placeholderTextColor={textColor + '80'}
+              keyboardType="decimal-pad"
+            />
+          </View>
+
+          <View style={[styles.card, styles.halfCard, { backgroundColor: cardBg, borderColor }]}>
+            <Text style={[styles.label, { color: textColor }]}>Margem (%)</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor }]}
+              value={profitMargin}
+              onChangeText={handleProfitMarginChange}
+              placeholder="0.00"
+              placeholderTextColor={textColor + '80'}
+              keyboardType="decimal-pad"
+              editable={!!cost && parseFloat(cost) > 0}
+            />
+          </View>
+        </View>
+
+        {/* Preço de Venda */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <Text style={[styles.label, { color: textColor }]}>Preço de Venda *</Text>
+          <TextInput
+            style={[styles.input, { color: textColor, borderColor }]}
+            value={price}
+            onChangeText={handlePriceChange}
+            placeholder="0.00"
+            placeholderTextColor={textColor + '80'}
+            keyboardType="decimal-pad"
+          />
+        </View>
+
+        {/* Quantidade */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <Text style={[styles.label, { color: textColor }]}>Quantidade em Estoque</Text>
+          <TextInput
+            style={[styles.input, { color: textColor, borderColor }]}
+            value={quantity}
+            onChangeText={setQuantity}
+            placeholder="0"
+            placeholderTextColor={textColor + '80'}
+            keyboardType="decimal-pad"
+          />
+        </View>
+
+        {/* Códigos de Barras */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <View style={styles.barcodeHeader}>
+            <Text style={[styles.label, { color: textColor }]}>Códigos de Barras *</Text>
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: '#007AFF' }]}
+              onPress={addBarcode}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.addButtonText}>Adicionar</Text>
+            </TouchableOpacity>
+          </View>
+
+          {barcodes.map((barcode, index) => (
+            <View key={index} style={styles.barcodeItem}>
+              <View style={styles.barcodeRow}>
+                <TextInput
+                  style={[styles.input, styles.barcodeInput, { color: textColor, borderColor }]}
+                  value={barcode}
+                  onChangeText={(value) => handleBarcodeChange(index, value)}
+                  placeholder={index === 0 ? "Código principal (obrigatório)" : "Código adicional"}
+                  placeholderTextColor={textColor + '80'}
+                />
+                <TouchableOpacity
+                  style={[styles.scanButton, { backgroundColor: '#007AFF' }]}
+                  onPress={() => {
+                    setScanningIndex(index);
+                    openScanner();
+                  }}
+                >
+                  <Ionicons name="barcode-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+                {barcodes.length > 1 && (
+                  <TouchableOpacity
+                    style={[styles.removeButton, { backgroundColor: '#FF3B30' }]}
+                    onPress={() => removeBarcode(index)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {index === 0 && (
+                <Text style={[styles.helperText, { color: textColor, opacity: 0.5 }]}>
+                  Este é o código principal e é obrigatório
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Botões de Ação */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimary, loading && styles.buttonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark" size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.buttonText}>
+                  {isNew ? 'Criar Produto' : 'Salvar Alterações'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {!isNew && (
+            <TouchableOpacity
+              style={[styles.button, styles.buttonDestructive]}
+              onPress={handleDelete}
+            >
+              <Ionicons name="trash-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.buttonText}>Desativar Produto</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Scanner Modal */}
+      {scanOpen && (
+        <View style={styles.modal}>
+          <CameraView
+            style={styles.camera}
+            barcodeScannerSettings={{
+              barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39'],
+            }}
+            onBarcodeScanned={({ data }) => {
+              handleBarcodeChange(scanningIndex, String(data));
+              setScanOpen(false);
             }}
           />
-          <CameraOverlay>
-            <Button onPress={() => setCameraOpen(false)}>
-              <ButtonText>Fechar</ButtonText>
-            </Button>
-            <ButtonPrimary
-              onPress={async () => {
-                if (cameraRef) {
-                  await takePhoto(cameraRef.current);
-                }
-              }}
+          <View style={styles.scannerOverlay}>
+            <View style={styles.scannerFrame} />
+            <TouchableOpacity
+              style={[styles.button, styles.buttonSecondary]}
+              onPress={() => setScanOpen(false)}
             >
-              <ButtonPrimaryText>Capturar</ButtonPrimaryText>
-            </ButtonPrimary>
-          </CameraOverlay>
-        </Modal>
+              <Ionicons name="close" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.buttonText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
-
-      {scanOpen && (
-        <Modal>
-          <ScannerContainer>
-            <CameraView
-              style={{ flex: 1 }}
-              ref={(ref) => {
-                if (ref) scannerRef.current = ref;
-              }}
-              barcodeScannerSettings={{
-                barcodeTypes: ['qr', 'ean13', 'code128'],
-              }}
-              onBarcodeScanned={({ data }) => {
-                setBarcode(String(data));
-                setScanOpen(false);
-              }}
-            />
-
-            <CameraOverlay>
-              <Button onPress={() => setScanOpen(false)}>
-                <ButtonText>Fechar</ButtonText>
-              </Button>
-            </CameraOverlay>
-          </ScannerContainer>
-        </Modal>
-      )}
-    </Container>
+    </KeyboardAvoidingView>
   );
 }
 
-const Container = styled.View`
-  flex: 1;
-  padding: 16px;
-`;
-
-const Title = styled.Text`
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 12px;
-`;
-
-const Field = styled.View`
-  margin-bottom: 12px;
-`;
-
-const Label = styled.Text`
-  font-size: 14px;
-  margin-bottom: 4px;
-`;
-
-const Input = styled.TextInput`
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
-`;
-
-const Row = styled.View`
-  flex-direction: row;
-  align-items: center;
-`;
-
-const Spacer = styled.View`
-  width: 12px;
-`;
-
-const Button = styled.TouchableOpacity`
-  padding: 12px 16px;
-  background: #eee;
-  border-radius: 8px;
-`;
-
-const ButtonText = styled.Text`
-  font-weight: 500;
-`;
-
-const ButtonPrimary = styled.TouchableOpacity<{ disabled?: boolean }>`
-  padding: 14px 16px;
-  background: ${({ disabled }) => (disabled ? '#aaa' : '#2e7d32')};
-  border-radius: 10px;
-`;
-
-const ButtonDestructive = styled.TouchableOpacity`
-  padding: 14px 16px;
-  background: #c62828;
-  border-radius: 10px;
-`;
-
-const ButtonPrimaryText = styled.Text`
-  color: #fff;
-  text-align: center;
-  font-weight: 600;
-`;
-
-const ImageRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-`;
-
-const ProductImage = styled.Image`
-  width: 96px;
-  height: 96px;
-  border-radius: 8px;
-  margin-right: 12px;
-`;
-
-const Placeholder = styled.Text`
-  color: #666;
-  margin-right: 12px;
-`;
-
-const Modal = styled.View`
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background: #000;
-`;
-
-const ScannerContainer = styled.View`
-  flex: 1;
-`;
-
-const CameraOverlay = styled.View`
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 16px;
-  background: rgba(0,0,0,0.5);
-  gap: 12px;
-`;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 60,
+  },
+  backButton: {
+    marginRight: 12,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  card: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  halfCard: {
+    flex: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  input: {
+    fontSize: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  barcodeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  barcodeInput: {
+    flex: 1,
+  },
+  scanButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  barcodeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  barcodeItem: {
+    marginBottom: 12,
+  },
+  removeButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  categoryScroll: {
+    marginTop: 8,
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 8,
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  actions: {
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 32,
+  },
+  button: {
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonPrimary: {
+    backgroundColor: '#007AFF',
+  },
+  buttonSecondary: {
+    backgroundColor: '#666',
+  },
+  buttonDestructive: {
+    backgroundColor: '#FF3B30',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#000',
+  },
+  camera: {
+    flex: 1,
+  },
+  scannerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  scannerFrame: {
+    width: 250,
+    height: 250,
+    borderWidth: 2,
+    borderColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 40,
+  },
+});

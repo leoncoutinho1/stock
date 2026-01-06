@@ -21,34 +21,24 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
-        name="products/index"
+        name="products"
         options={{
           title: 'Produtos',
           tabBarIcon: ({ color, size }) => (<Ionicons name="list" size={size} color={color} />)
         }}
       />
       <Tabs.Screen
-        name="products/[id]"
-        initialParams={{ id: 'new' }}
-        options={{
-          title: 'Cadastrar Produto',
-          href: null,
-          tabBarIcon: ({ color, size }) => (<Ionicons name="list" size={size} color={color} />)
-        }}
-      />
-      <Tabs.Screen
-        name="sales/new"
-        options={{
-          title: 'Registrar Venda',
-          href: null,
-          tabBarIcon: ({ color, size }) => (<Ionicons name="cart" size={size} color={color} />)
-        }}
-      />
-      <Tabs.Screen
-        name="sales/index"
+        name="sales"
         options={{
           title: 'Vendas',
           tabBarIcon: ({ color, size }) => (<Ionicons name="cart" size={size} color={color} />)
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Configurações',
+          tabBarIcon: ({ color, size }) => (<Ionicons name="settings" size={size} color={color} />)
         }}
       />
     </Tabs>

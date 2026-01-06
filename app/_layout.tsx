@@ -1,11 +1,11 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { createPersister, store } from '@/src/store';
+import { authApi } from '@/src/api/auth';
+import { ThemeProvider as CustomThemeProvider } from '@/src/contexts/ThemeContext';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View, StatusBar } from 'react-native';
 import 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Provider, useCreatePersister } from 'tinybase/ui-react';
-
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -13,33 +13,55 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [isReady, setIsReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    initializeApp();
+  }, []);
+
+  const initializeApp = async () => {
+    try {
+      // Initialize auth from storage
+      await authApi.initialize();
+
+      // Check if user is authenticated
+      setIsAuthenticated(authApi.isAuthenticated());
+    } catch (error) {
+      console.error('Error initializing app:', error);
+    } finally {
+      setIsReady(true);
+    }
+  };
+
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Provider store={store}>
-        <Persistence />
-        <SafeAreaView style={{ flex: 1 }} >
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-        </SafeAreaView>
-      </Provider>
-    </ThemeProvider>
+    <CustomThemeProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <StatusBar
+          barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+          backgroundColor="transparent"
+          translucent
+        />
+        <Stack
+          initialRouteName={isAuthenticated ? '(tabs)' : 'login'}
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: 'transparent' }
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ title: 'Login', headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+      </ThemeProvider>
+    </CustomThemeProvider>
   );
-}
-
-function Persistence() {
-  useCreatePersister(store, () => createPersister(), [], async (persister) => {
-    await persister.startAutoLoad();
-    const products = store.getTable?.('products') ?? {};
-    for (const id of Object.keys(products)) {
-      const active = store.getCell('products', id, 'ind_active');
-      if (typeof active === 'undefined') {
-        store.setCell('products', id, 'ind_active', true);
-      }
-    }
-    await persister.startAutoSave();
-  });
-  return null;
 }
