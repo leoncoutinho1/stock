@@ -1,7 +1,7 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useTheme } from '@/src/contexts/ThemeContext';
 import { authApi } from '@/src/api/auth';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -44,7 +44,7 @@ export default function LoginScreen() {
       const result = await authApi.login(email.trim(), password, domain.trim());
 
       if (result?.accessToken) {
-        router.replace('/(tabs)/products/index');
+        router.replace('/(tabs)/products');
       } else {
         Alert.alert('Erro', 'Falha na autenticação');
       }

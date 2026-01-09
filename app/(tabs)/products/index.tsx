@@ -70,7 +70,7 @@ export default function ProductsListScreen() {
         });
       }
 
-      const activeProducts = (result.data || []).filter((p) => p.ind_active !== false);
+      const activeProducts = (result.data || []).filter((p) => p.isActive !== false);
 
       if (append) {
         setProducts((prev) => [...prev, ...activeProducts]);

@@ -6,7 +6,7 @@ export type ProductPayload = {
     barcodes: string[];
     categoryId: string;
     image?: string;
-    ind_active?: boolean;
+    isActive?: boolean;
 };
 
 export type ProductDto = ProductPayload & { id: string };

@@ -226,23 +226,24 @@ export default function ProductFormScreen() {
         .map(b => b.trim())
         .filter(b => b.length > 0);
 
-      const payload = {
-        id: id === 'new' ? null : id,
+      const payload: any = {
         description: description.trim(),
         categoryId: categoryId,
         cost: parseFloat(cost) || 0,
         price: parseFloat(price) || 0,
         quantity: parseFloat(quantity) || 0,
         barcodes: validBarcodes,
-        ind_active: true,
+        isActive: true,
       };
 
       if (isNew) {
+        // Don't send id for new products - backend will generate it
         await productApi.createProduct(payload);
         Alert.alert('Sucesso', 'Produto criado com sucesso!', [
           { text: 'OK', onPress: () => router.back() }
         ]);
       } else {
+        // Include id for updates
         payload.id = id;
         await productApi.updateProduct(id, payload);
         Alert.alert('Sucesso', 'Produto atualizado com sucesso!', [

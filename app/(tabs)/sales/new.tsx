@@ -135,7 +135,7 @@ export default function SaleNewScreen() {
     if (!q) return [];
 
     return Object.values(products)
-      .filter(p => p.ind_active !== false)
+      .filter(p => p.isActive !== false)
       .filter(p =>
         p.description.toLowerCase().includes(q) ||
         p.barcodes?.some(b => b.toLowerCase().includes(q))
@@ -221,7 +221,7 @@ export default function SaleNewScreen() {
 
   const handleBarcodeScan = (code: string) => {
     const product = Object.values(products).find(p =>
-      p.ind_active !== false && p.barcodes?.includes(code)
+      p.isActive !== false && p.barcodes?.includes(code)
     );
     if (product) {
       addToCart(product, 1);
