@@ -1,10 +1,18 @@
 import { http } from './client';
-import { SaleItemDto, SaleDTO, ResultList } from './types';
+import { ResultList, SaleDTO } from './types';
 
 export const saleApi = {
-    getSales: async () => {
-        const res = await http<ResultList<any>>("/Sale/ListSale");
-        return res.data;
+    getSales: async (params?: { limit?: number; offset?: number; updatedAt?: string }) => {
+        const queryParams = new URLSearchParams();
+        if (params?.limit) queryParams.append('Limit', params.limit.toString());
+        if (params?.offset) queryParams.append('Offset', params.offset.toString());
+        if (params?.updatedAt) queryParams.append('UpdatedAt', params.updatedAt);
+
+        const query = queryParams.toString();
+        const path = query ? `/Sale/ListSale?${query}` : '/Sale/ListSale';
+
+        const res = await http<ResultList<any>>(path);
+        return res;
     },
 
     getSale: (id: string) => http<SaleDTO>(`/Sale/${id}`),

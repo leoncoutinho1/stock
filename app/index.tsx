@@ -1,4 +1,5 @@
 import { authApi } from '@/src/api/auth';
+import { setOnUnauthorized } from '@/src/api/client';
 import { useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -15,6 +16,13 @@ export default function Index() {
 
     const initializeApp = async () => {
         try {
+            // Configure unauthorized callback
+            setOnUnauthorized(() => {
+                console.log('[App] Unauthorized callback triggered - redirecting to login');
+                setIsAuthenticated(false);
+                router.replace('/login');
+            });
+
             // Initialize auth from storage
             await authApi.initialize();
 

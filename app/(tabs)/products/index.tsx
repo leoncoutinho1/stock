@@ -18,15 +18,15 @@ import {
   View,
 } from 'react-native';
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 export default function ProductsListScreen() {
   const router = useRouter();
   const scheme = useColorScheme() ?? 'light';
   const textColor = useThemeColor({}, 'text');
   const bgColor = useThemeColor({}, 'background');
-  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
-  const borderColor = scheme === 'dark' ? '#333' : '#e0e0e0';
+  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#FFFFFF';
+  const borderColor = scheme === 'dark' ? '#333' : '#E5E5EA';
 
   const [products, setProducts] = useState<ProductDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,13 +73,17 @@ export default function ProductsListScreen() {
       const activeProducts = (result.data || []).filter((p) => p.isActive !== false);
 
       if (append) {
-        setProducts((prev) => [...prev, ...activeProducts]);
+        const newProducts = [...products, ...activeProducts];
+        setProducts(newProducts);
+        // Check if we have more items to load
+        setHasMore(newProducts.length < (result.totalCount || 0));
       } else {
         setProducts(activeProducts);
+        // Check if we have more items to load
+        setHasMore(activeProducts.length < (result.totalCount || 0));
       }
 
       setTotalCount(result.totalCount || activeProducts.length);
-      setHasMore(activeProducts.length === ITEMS_PER_PAGE && !search);
       setCurrentPage(page);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
@@ -184,12 +188,29 @@ export default function ProductsListScreen() {
   );
 
   const renderFooter = () => {
-    if (!loadingMore) return null;
-    return (
-      <View style={styles.loadingMore}>
-        <ActivityIndicator size="small" color="#007AFF" />
-      </View>
-    );
+    if (loadingMore) {
+      return (
+        <View style={styles.loadingMore}>
+          <ActivityIndicator size="small" color="#007AFF" />
+        </View>
+      );
+    }
+
+    if (hasMore && products.length > 0 && products.length < totalCount) {
+      return (
+        <TouchableOpacity
+          style={[styles.loadMoreButton, { backgroundColor: cardBg, borderColor }]}
+          onPress={handleLoadMore}
+        >
+          <Text style={[styles.loadMoreText, { color: '#007AFF' }]}>
+            Mostrar mais resultados
+          </Text>
+          <Ionicons name="chevron-down" size={20} color="#007AFF" />
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
   };
 
   const renderEmpty = () => {
@@ -241,7 +262,7 @@ export default function ProductsListScreen() {
 
       {totalCount > 0 && (
         <Text style={[styles.resultCount, { color: textColor, opacity: 0.6 }]}>
-          {totalCount} produto{totalCount !== 1 ? 's' : ''} encontrado{totalCount !== 1 ? 's' : ''}
+          Mostrando {products.length} de {totalCount} produto{totalCount !== 1 ? 's' : ''}
         </Text>
       )}
 
@@ -252,8 +273,6 @@ export default function ProductsListScreen() {
         contentContainerStyle={styles.list}
         refreshing={refreshing}
         onRefresh={handleRefresh}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmpty}
       />
@@ -384,6 +403,21 @@ const styles = StyleSheet.create({
   loadingMore: {
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginVertical: 16,
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',

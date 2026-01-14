@@ -1,8 +1,8 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { saleApi } from '@/src/api/sale';
 import { productApi } from '@/src/api/product';
-import { SaleDTO, ProductDto } from '@/src/api/types';
+import { saleApi } from '@/src/api/sale';
+import { ProductDto, SaleDTO } from '@/src/api/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -17,6 +17,8 @@ import {
 
 type PeriodType = 'hoje' | 'semana' | 'mês';
 
+const ITEMS_PER_PAGE = 10;
+
 interface SaleGroup {
   id: string;
   sale: SaleDTO;
@@ -29,29 +31,78 @@ export default function SalesListScreen() {
   const scheme = useColorScheme() ?? 'light';
   const textColor = useThemeColor({}, 'text');
   const bgColor = useThemeColor({}, 'background');
-  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
-  const borderColor = scheme === 'dark' ? '#333' : '#e0e0e0';
+  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#FFFFFF';
+  const borderColor = scheme === 'dark' ? '#333' : '#E5E5EA';
 
   const [sales, setSales] = useState<SaleDTO[]>([]);
   const [products, setProducts] = useState<Record<string, ProductDto>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [period, setPeriod] = useState<PeriodType>('hoje');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Calculate start date based on period
+  const getStartDate = (periodType: PeriodType): string => {
+    const now = new Date();
+    let startDate: Date;
+
+    if (periodType === 'hoje') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (periodType === 'semana') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    return startDate.toISOString();
+  };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  // Reload data when period changes
+  useEffect(() => {
+    setCurrentPage(0);
+    loadData(0, false);
+  }, [period]);
+
+  const loadData = async (page: number = 0, append: boolean = false) => {
     try {
-      setLoading(true);
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
       const [salesData, productsData] = await Promise.all([
-        saleApi.getSales(),
+        saleApi.getSales({
+          limit: ITEMS_PER_PAGE,
+          offset: page * ITEMS_PER_PAGE,
+          updatedAt: getStartDate(period),
+        }),
         productApi.getProducts({ limit: 10000 }),
       ]);
 
       console.log('Sales data:', salesData);
-      setSales(salesData || []);
+
+      const salesList = salesData.data || [];
+      const total = salesData.totalCount || 0;
+
+      if (append) {
+        const newSales = [...sales, ...salesList];
+        setSales(newSales);
+        setHasMore(newSales.length < total);
+      } else {
+        setSales(salesList);
+        setHasMore(salesList.length < total);
+      }
+
+      setTotalCount(total);
+      setCurrentPage(page);
 
       // Create product map
       const productMap: Record<string, ProductDto> = {};
@@ -65,12 +116,20 @@ export default function SalesListScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadData();
+    setCurrentPage(0);
+    loadData(0, false);
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore && sales.length > 0) {
+      loadData(currentPage + 1, true);
+    }
   };
 
   // Convert sales to groups
@@ -86,26 +145,10 @@ export default function SalesListScreen() {
     }).sort((a, b) => b.timestamp - a.timestamp);
   }, [sales]);
 
-  // Filter by period
-  const visibleGroups = useMemo(() => {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-
-    const inPeriod = (ts: number) => {
-      if (period === 'hoje') return ts >= startOfDay;
-      if (period === 'semana') return ts >= weekAgo;
-      return ts >= startOfMonth;
-    };
-
-    return groups.filter(g => inPeriod(g.timestamp));
-  }, [groups, period]);
-
-  // Calculate period total
+  // Calculate total from all loaded sales
   const periodTotal = useMemo(() => {
-    return visibleGroups.reduce((sum, group) => sum + group.total, 0);
-  }, [visibleGroups]);
+    return groups.reduce((sum, group) => sum + group.total, 0);
+  }, [groups]);
 
   const renderPeriodButton = (p: PeriodType, label: string) => (
     <TouchableOpacity
@@ -214,6 +257,32 @@ export default function SalesListScreen() {
     );
   };
 
+  const renderFooter = () => {
+    if (loadingMore) {
+      return (
+        <View style={styles.loadingMore}>
+          <ActivityIndicator size="small" color="#34C759" />
+        </View>
+      );
+    }
+
+    if (hasMore && sales.length > 0 && sales.length < totalCount) {
+      return (
+        <TouchableOpacity
+          style={[styles.loadMoreButton, { backgroundColor: cardBg, borderColor }]}
+          onPress={handleLoadMore}
+        >
+          <Text style={[styles.loadMoreText, { color: '#34C759' }]}>
+            Mostrar mais resultados
+          </Text>
+          <Ionicons name="chevron-down" size={20} color="#34C759" />
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
+  };
+
   if (loading && sales.length === 0) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: bgColor }]}>
@@ -245,21 +314,22 @@ export default function SalesListScreen() {
       </View>
 
       {/* Sales Count */}
-      {visibleGroups.length > 0 && (
+      {groups.length > 0 && (
         <Text style={[styles.resultCount, { color: textColor, opacity: 0.6 }]}>
-          {visibleGroups.length} {visibleGroups.length === 1 ? 'venda' : 'vendas'}
+          Mostrando {groups.length} de {totalCount} {totalCount === 1 ? 'venda' : 'vendas'}
         </Text>
       )}
 
       {/* Sales List */}
       <FlatList
-        data={visibleGroups}
+        data={groups}
         renderItem={renderSaleGroup}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshing={refreshing}
         onRefresh={handleRefresh}
         ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
       />
 
@@ -411,6 +481,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 16,
     textAlign: 'center',
+  },
+  loadingMore: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginVertical: 16,
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',

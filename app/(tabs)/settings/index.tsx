@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useTheme } from '@/src/contexts/ThemeContext';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { authApi } from '@/src/api/auth';
+import { useTheme } from '@/src/contexts/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface SettingItem {
     title: string;
@@ -19,8 +19,8 @@ export default function SettingsScreen() {
     const scheme = useColorScheme() ?? 'light';
     const textColor = useThemeColor({}, 'text');
     const bgColor = useThemeColor({}, 'background');
-    const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
-    const borderColor = scheme === 'dark' ? '#333' : '#e0e0e0';
+    const cardBg = scheme === 'dark' ? '#1f1f1f' : '#FFFFFF';
+    const borderColor = scheme === 'dark' ? '#333' : '#E5E5EA';
     const { theme, setTheme } = useTheme();
 
     const settingsItems: SettingItem[] = [

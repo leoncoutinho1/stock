@@ -11,8 +11,8 @@ export default function CheckoutsScreen() {
     const scheme = useColorScheme() ?? 'light';
     const textColor = useThemeColor({}, 'text');
     const bgColor = useThemeColor({}, 'background');
-    const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
-    const borderColor = scheme === 'dark' ? '#333' : '#e0e0e0';
+    const cardBg = scheme === 'dark' ? '#1f1f1f' : '#FFFFFF';
+    const borderColor = scheme === 'dark' ? '#333' : '#E5E5EA';
 
     const [checkouts, setCheckouts] = useState<Checkout[]>([]);
     const [loading, setLoading] = useState(true);

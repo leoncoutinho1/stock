@@ -11,7 +11,7 @@ export default function TabLayout() {
   const textColor = useThemeColor({}, 'text');
   const bgColor = useThemeColor({}, 'background');
   const scheme = useColorScheme() ?? 'light';
-  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#fff';
+  const cardBg = scheme === 'dark' ? '#1f1f1f' : '#FFFFFF';
 
   return (
     <Tabs

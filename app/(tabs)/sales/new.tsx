@@ -1,16 +1,16 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { Cashier, listCashiers } from '@/src/api/cashier';
+import { Checkout, listCheckouts } from '@/src/api/checkout';
+import { listPaymentForms, PaymentForm } from '@/src/api/paymentForm';
 import { productApi } from '@/src/api/product';
 import { saleApi } from '@/src/api/sale';
-import { listCashiers, Cashier } from '@/src/api/cashier';
-import { listPaymentForms, PaymentForm } from '@/src/api/paymentForm';
-import { listCheckouts, Checkout } from '@/src/api/checkout';
 import { ProductDto, SaleDTO, SaleProductDTO } from '@/src/api/types';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -51,6 +51,7 @@ export default function SaleNewScreen() {
   // Products
   const [products, setProducts] = useState<Record<string, ProductDto>>({});
   const [searchText, setSearchText] = useState('');
+  const [quantityToAdd, setQuantityToAdd] = useState('1');
   const [cart, setCart] = useState<CartItem[]>([]);
 
   // Scanner
@@ -182,6 +183,7 @@ export default function SaleNewScreen() {
       }];
     });
     setSearchText('');
+    setQuantityToAdd('1');
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -203,6 +205,7 @@ export default function SaleNewScreen() {
   const clearCart = () => {
     setCart([]);
     setSearchText('');
+    setQuantityToAdd('1');
     setPaidValue('');
     setOverallDiscount('0');
   };
@@ -224,7 +227,8 @@ export default function SaleNewScreen() {
       p.isActive !== false && p.barcodes?.includes(code)
     );
     if (product) {
-      addToCart(product, 1);
+      const qty = parseFloat(quantityToAdd) || 1;
+      addToCart(product, qty);
       setScanOpen(false);
     } else {
       Alert.alert('Produto não encontrado', 'Nenhum produto com este código de barras');
@@ -420,6 +424,19 @@ export default function SaleNewScreen() {
         <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
           <Text style={[styles.sectionTitle, { color: textColor }]}>Adicionar Produtos</Text>
 
+          {/* Quantity Input */}
+          <View style={styles.quantityInputRow}>
+            <Text style={[styles.label, { color: textColor }]}>Quantidade:</Text>
+            <TextInput
+              style={[styles.quantityInput, { color: textColor, borderColor }]}
+              value={quantityToAdd}
+              onChangeText={setQuantityToAdd}
+              keyboardType="decimal-pad"
+              placeholder="1"
+              placeholderTextColor={textColor + '80'}
+            />
+          </View>
+
           <View style={styles.searchRow}>
             <TextInput
               style={[styles.searchInput, { color: textColor, borderColor, flex: 1 }]}
@@ -443,7 +460,10 @@ export default function SaleNewScreen() {
                 <TouchableOpacity
                   key={product.id}
                   style={[styles.productItem, { borderColor }]}
-                  onPress={() => addToCart(product)}
+                  onPress={() => {
+                    const qty = parseFloat(quantityToAdd) || 1;
+                    addToCart(product, qty);
+                  }}
                 >
                   <View style={styles.productInfo}>
                     <Text style={[styles.productName, { color: textColor }]} numberOfLines={1}>
@@ -489,30 +509,15 @@ export default function SaleNewScreen() {
                   </View>
 
                   <View style={styles.cartItemDetails}>
-                    <View style={styles.quantityControl}>
-                      <TouchableOpacity
-                        style={[styles.qtyButton, { borderColor }]}
-                        onPress={() => updateQuantity(item.productId, item.quantity - 1)}
-                      >
-                        <Ionicons name="remove" size={16} color={textColor} />
-                      </TouchableOpacity>
-                      <Text style={[styles.qtyText, { color: textColor }]}>{item.quantity}</Text>
-                      <TouchableOpacity
-                        style={[styles.qtyButton, { borderColor }]}
-                        onPress={() => updateQuantity(item.productId, item.quantity + 1)}
-                      >
-                        <Ionicons name="add" size={16} color={textColor} />
-                      </TouchableOpacity>
-                    </View>
-
+                    <Text style={[styles.cartItemMeta, { color: textColor, opacity: 0.6 }]}>
+                      {item.quantity} × R$ {item.unitPrice.toFixed(2)}
+                    </Text>
                     <Text style={[styles.cartItemPrice, { color: textColor }]}>
                       R$ {itemTotal.toFixed(2)}
                     </Text>
                   </View>
 
-                  <Text style={[styles.cartItemMeta, { color: textColor, opacity: 0.6 }]}>
-                    {item.quantity} × R$ {item.unitPrice.toFixed(2)}
-                  </Text>
+
                 </View>
               );
             })
@@ -685,6 +690,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  quantityInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  quantityInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    width: 80,
+    textAlign: 'center',
+  },
   searchRow: {
     flexDirection: 'row',
     gap: 8,
@@ -775,7 +794,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   cartItemMeta: {
-    fontSize: 12,
+    fontSize: 16,
+    fontWeight: '600',
   },
   paymentRow: {
     flexDirection: 'row',

@@ -11,6 +11,13 @@ let authToken: string | null = null;
 let refreshToken: string | null = null;
 let domain: string | null = null;
 
+// Callback to handle unauthorized access (401)
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const setOnUnauthorized = (callback: () => void) => {
+    onUnauthorizedCallback = callback;
+};
+
 // Initialize tokens from storage
 export const initializeAuth = async () => {
     try {
@@ -93,6 +100,21 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
     });
 
     if (!res.ok) {
+        // Check if token is invalid (401 Unauthorized)
+        if (res.status === 401) {
+            console.log('[HTTP] Token inválido (401) - fazendo logout automático');
+
+            // Clear auth data
+            await clearAuth();
+
+            // Call the unauthorized callback if set
+            if (onUnauthorizedCallback) {
+                onUnauthorizedCallback();
+            }
+
+            throw new Error('Token inválido. Você foi deslogado.');
+        }
+
         const errorBody = await res.text().catch(() => "Unknown error");
         throw new Error(`HTTP ${res.status}: ${errorBody}`);
     }
