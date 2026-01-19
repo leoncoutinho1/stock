@@ -1,9 +1,10 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { Category, listCategories } from '@/src/api/category';
 import { productApi } from '@/src/api/product';
-import { listCategories, Category } from '@/src/api/category';
 import { ProductDto } from '@/src/api/types';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -40,6 +41,7 @@ export default function ProductFormScreen() {
   const [profitMargin, setProfitMargin] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [unit, setUnit] = useState('UN');
   const [barcodes, setBarcodes] = useState<string[]>(['']); // Array of barcodes, starts with one empty
   const [scanOpen, setScanOpen] = useState(false);
   const [scanningIndex, setScanningIndex] = useState(0); // Track which barcode is being scanned
@@ -52,6 +54,7 @@ export default function ProductFormScreen() {
     setProfitMargin('');
     setPrice('');
     setQuantity('');
+    setUnit('UN');
     setBarcodes(['']);
   };
 
@@ -111,6 +114,7 @@ export default function ProductFormScreen() {
       setCost(product.cost?.toString() || '');
       setPrice(product.price?.toString() || '');
       setQuantity(product.quantity?.toString() || '');
+      setUnit(product.unit || 'UN');
 
       // Load all barcodes, or start with one empty field
       setBarcodes(product.barcodes && product.barcodes.length > 0 ? product.barcodes : ['']);
@@ -232,6 +236,7 @@ export default function ProductFormScreen() {
         cost: parseFloat(cost) || 0,
         price: parseFloat(price) || 0,
         quantity: parseFloat(quantity) || 0,
+        unit: unit,
         barcodes: validBarcodes,
         isActive: true,
       };
@@ -402,17 +407,33 @@ export default function ProductFormScreen() {
           />
         </View>
 
-        {/* Quantidade */}
-        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-          <Text style={[styles.label, { color: textColor }]}>Quantidade em Estoque</Text>
-          <TextInput
-            style={[styles.input, { color: textColor, borderColor }]}
-            value={quantity}
-            onChangeText={setQuantity}
-            placeholder="0"
-            placeholderTextColor={textColor + '80'}
-            keyboardType="decimal-pad"
-          />
+        {/* Quantidade e Unidade */}
+        <View style={styles.row}>
+          <View style={[styles.card, styles.halfCard, { backgroundColor: cardBg, borderColor }]}>
+            <Text style={[styles.label, { color: textColor }]}>Quantidade em Estoque</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor }]}
+              value={quantity}
+              onChangeText={setQuantity}
+              placeholder="0"
+              placeholderTextColor={textColor + '80'}
+              keyboardType="decimal-pad"
+            />
+          </View>
+
+          <View style={[styles.card, styles.halfCard, { backgroundColor: cardBg, borderColor }]}>
+            <Text style={[styles.label, { color: textColor }]}>Unidade *</Text>
+            <Picker
+              selectedValue={unit}
+              onValueChange={(itemValue) => setUnit(itemValue)}
+              style={[styles.picker, { color: textColor }]}
+            >
+              <Picker.Item label="UN - Unidade" value="UN" />
+              <Picker.Item label="KG - Quilograma" value="KG" />
+              <Picker.Item label="LT - Litro" value="LT" />
+              <Picker.Item label="PC - Peça" value="PC" />
+            </Picker>
+          </View>
         </View>
 
         {/* Códigos de Barras */}
@@ -694,5 +715,11 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
     borderRadius: 12,
     marginBottom: 40,
+  },
+  picker: {
+    fontSize: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
   },
 });

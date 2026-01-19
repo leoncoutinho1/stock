@@ -5,6 +5,7 @@ export type ProductPayload = {
     quantity: number;
     barcodes: string[];
     categoryId: string;
+    unit: string;
     image?: string;
     isActive?: boolean;
 };
