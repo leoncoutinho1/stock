@@ -21,7 +21,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ProductCompositionDto } from '@/src/api/types';
 
 export default function ProductFormScreen() {
   const router = useRouter();
@@ -59,7 +58,7 @@ export default function ProductFormScreen() {
 
   // Composition States
   const [composite, setComposite] = useState(false);
-  const [componentProducts, setComponentProducts] = useState<ProductCompositionDto[]>([]);
+  const [componentProducts, setComponentProducts] = useState<any[]>([]);
   const [compModalOpen, setCompModalOpen] = useState(false);
   const [compSearchText, setCompSearchText] = useState('');
   const [compSearchResults, setCompSearchResults] = useState<ProductDto[]>([]);
@@ -138,7 +137,7 @@ export default function ProductFormScreen() {
 
       // Composição
       setComposite(!!product.composite);
-      setComponentProducts(product.componentProducts || []);
+      setComponentProducts(product.componentProducts?.map(cp => ({ ...cp, quantity: cp.quantity.toString() })) || []);
 
       // Load all barcodes, or start with one empty field
       setBarcodes(product.barcodes && product.barcodes.length > 0 ? product.barcodes : ['']);
@@ -228,10 +227,10 @@ export default function ProductFormScreen() {
       return;
     }
 
-    const newComponent: ProductCompositionDto = {
+    const newComponent: any = {
       componentProductId: product.id,
       componentProductDescription: product.description,
-      quantity: 1,
+      quantity: '1',
       componentProductPrice: product.price,
       componentProductCost: product.cost
     };
@@ -252,17 +251,27 @@ export default function ProductFormScreen() {
   };
 
   const updateComponentQuantity = (productId: string, qty: string) => {
-    const numQty = parseFloat(qty) || 0;
+    // Allow comma or dot for decimals
+    const sanitizedQty = qty.replace(',', '.');
+
+    // Only allow numeric characters and one decimal point
+    if (sanitizedQty !== '' && !/^\d*\.?\d*$/.test(sanitizedQty)) {
+      return;
+    }
+
     const updated = componentProducts.map(p =>
-      p.componentProductId === productId ? { ...p, quantity: numQty } : p
+      p.componentProductId === productId ? { ...p, quantity: sanitizedQty } : p
     );
     setComponentProducts(updated);
     updateCompositeCost(updated);
   };
 
-  const updateCompositeCost = (components: ProductCompositionDto[]) => {
+  const updateCompositeCost = (components: any[]) => {
     if (composite) {
-      const totalCost = components.reduce((sum, p) => sum + (p.componentProductCost || 0) * p.quantity, 0);
+      const totalCost = components.reduce((sum, p) => {
+        const qty = typeof p.quantity === 'string' ? parseFloat(p.quantity) || 0 : p.quantity;
+        return sum + (p.componentProductCost || 0) * qty;
+      }, 0);
       setCost(totalCost.toFixed(2));
 
       // Se houver margem, recalcular preço
@@ -340,7 +349,7 @@ export default function ProductFormScreen() {
         composite: composite,
         componentProducts: composite ? componentProducts.map(cp => ({
           componentProductId: cp.componentProductId,
-          quantity: cp.quantity
+          quantity: typeof cp.quantity === 'string' ? parseFloat(cp.quantity) || 0 : cp.quantity
         })) : []
       };
 
@@ -1042,7 +1051,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   qtyInput: {
-    width: 60,
+    width: 100,
     padding: 6,
     fontSize: 14,
     textAlign: 'center',
