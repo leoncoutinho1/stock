@@ -4,14 +4,15 @@ import { Category, listCategories } from '@/src/api/category';
 import { productApi } from '@/src/api/product';
 import { ProductDto } from '@/src/api/types';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -20,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ProductCompositionDto } from '@/src/api/types';
 
 export default function ProductFormScreen() {
   const router = useRouter();
@@ -46,6 +48,22 @@ export default function ProductFormScreen() {
   const [scanOpen, setScanOpen] = useState(false);
   const [scanningIndex, setScanningIndex] = useState(0); // Track which barcode is being scanned
   const [permission, requestPermission] = useCameraPermissions();
+  const [unitModalOpen, setUnitModalOpen] = useState(false);
+
+  const units = [
+    { label: 'UN - Unidade', value: 'UN' },
+    { label: 'KG - Quilograma', value: 'KG' },
+    { label: 'LT - Litro', value: 'LT' },
+    { label: 'PC - Peça', value: 'PC' },
+  ];
+
+  // Composition States
+  const [composite, setComposite] = useState(false);
+  const [componentProducts, setComponentProducts] = useState<ProductCompositionDto[]>([]);
+  const [compModalOpen, setCompModalOpen] = useState(false);
+  const [compSearchText, setCompSearchText] = useState('');
+  const [compSearchResults, setCompSearchResults] = useState<ProductDto[]>([]);
+  const [compSearchLoading, setCompSearchLoading] = useState(false);
 
   const resetForm = () => {
     setDescription('');
@@ -56,6 +74,8 @@ export default function ProductFormScreen() {
     setQuantity('');
     setUnit('UN');
     setBarcodes(['']);
+    setComposite(false);
+    setComponentProducts([]);
   };
 
   useEffect(() => {
@@ -116,6 +136,10 @@ export default function ProductFormScreen() {
       setQuantity(product.quantity?.toString() || '');
       setUnit(product.unit || 'UN');
 
+      // Composição
+      setComposite(!!product.composite);
+      setComponentProducts(product.componentProducts || []);
+
       // Load all barcodes, or start with one empty field
       setBarcodes(product.barcodes && product.barcodes.length > 0 ? product.barcodes : ['']);
 
@@ -174,6 +198,80 @@ export default function ProductFormScreen() {
       if (!isNaN(costValue) && !isNaN(priceValue) && costValue > 0) {
         const margin = ((priceValue - costValue) / costValue) * 100;
         setProfitMargin(margin.toFixed(2));
+      }
+    }
+  };
+
+  const searchComponents = async () => {
+    if (!compSearchText.trim()) return;
+    setCompSearchLoading(true);
+    try {
+      const results = await productApi.searchProducts(compSearchText);
+      // Backend returns either ProductDto, ProductDto[] or wrapped result
+      if (Array.isArray(results)) {
+        setCompSearchResults(results.filter(p => p.id !== id)); // Don't allow self-composition
+      } else if (results && (results as any).id) {
+        setCompSearchResults([(results as ProductDto)].filter(p => p.id !== id));
+      } else {
+        setCompSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar componentes:', error);
+    } finally {
+      setCompSearchLoading(false);
+    }
+  };
+
+  const addComponent = (product: ProductDto) => {
+    if (componentProducts.some(p => p.componentProductId === product.id)) {
+      Alert.alert('Aviso', 'Este produto já foi adicionado à composição');
+      return;
+    }
+
+    const newComponent: ProductCompositionDto = {
+      componentProductId: product.id,
+      componentProductDescription: product.description,
+      quantity: 1,
+      componentProductPrice: product.price,
+      componentProductCost: product.cost
+    };
+
+    setComponentProducts([...componentProducts, newComponent]);
+    setCompModalOpen(false);
+    setCompSearchText('');
+    setCompSearchResults([]);
+
+    // Recalcular custo total se for composto
+    updateCompositeCost([...componentProducts, newComponent]);
+  };
+
+  const removeComponent = (productId: string) => {
+    const updated = componentProducts.filter(p => p.componentProductId !== productId);
+    setComponentProducts(updated);
+    updateCompositeCost(updated);
+  };
+
+  const updateComponentQuantity = (productId: string, qty: string) => {
+    const numQty = parseFloat(qty) || 0;
+    const updated = componentProducts.map(p =>
+      p.componentProductId === productId ? { ...p, quantity: numQty } : p
+    );
+    setComponentProducts(updated);
+    updateCompositeCost(updated);
+  };
+
+  const updateCompositeCost = (components: ProductCompositionDto[]) => {
+    if (composite) {
+      const totalCost = components.reduce((sum, p) => sum + (p.componentProductCost || 0) * p.quantity, 0);
+      setCost(totalCost.toFixed(2));
+
+      // Se houver margem, recalcular preço
+      if (profitMargin) {
+        const marginValue = parseFloat(profitMargin);
+        if (!isNaN(marginValue)) {
+          const calculatedPrice = totalCost * (1 + marginValue / 100);
+          setPrice(calculatedPrice.toFixed(2));
+        }
       }
     }
   };
@@ -239,6 +337,11 @@ export default function ProductFormScreen() {
         unit: unit,
         barcodes: validBarcodes,
         isActive: true,
+        composite: composite,
+        componentProducts: composite ? componentProducts.map(cp => ({
+          componentProductId: cp.componentProductId,
+          quantity: cp.quantity
+        })) : []
       };
 
       if (isNew) {
@@ -423,16 +526,16 @@ export default function ProductFormScreen() {
 
           <View style={[styles.card, styles.halfCard, { backgroundColor: cardBg, borderColor }]}>
             <Text style={[styles.label, { color: textColor }]}>Unidade *</Text>
-            <Picker
-              selectedValue={unit}
-              onValueChange={(itemValue) => setUnit(itemValue)}
-              style={[styles.picker, { color: textColor }]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setUnitModalOpen(true)}
+              style={[styles.pickerContainer, { borderColor, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 48 }]}
             >
-              <Picker.Item label="UN - Unidade" value="UN" />
-              <Picker.Item label="KG - Quilograma" value="KG" />
-              <Picker.Item label="LT - Litro" value="LT" />
-              <Picker.Item label="PC - Peça" value="PC" />
-            </Picker>
+              <Text style={{ color: textColor }}>
+                {units.find(u => u.value === unit)?.label || 'Selecione'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={textColor} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -484,6 +587,92 @@ export default function ProductFormScreen() {
               )}
             </View>
           ))}
+        </View>
+
+        {/* Produto Composto */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+          <View style={styles.switchRow}>
+            <View>
+              <Text style={[styles.label, { color: textColor, marginBottom: 0 }]}>Produto Composto</Text>
+              <Text style={[styles.helperText, { color: textColor, opacity: 0.5 }]}>
+                Este produto é formado por outros produtos?
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                const newValue = !composite;
+                setComposite(newValue);
+                if (newValue) updateCompositeCost(componentProducts);
+              }}
+              style={styles.customSwitchContainer}
+            >
+              <View style={[
+                styles.customSwitchTrack,
+                { backgroundColor: composite ? '#34C759' : '#767577' }
+              ]}>
+                <View style={[
+                  styles.customSwitchThumb,
+                  { transform: [{ translateX: composite ? 20 : 0 }] }
+                ]} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {composite && (
+            <View style={styles.compositionContainer}>
+              <View style={[styles.separator, { backgroundColor: borderColor }]} />
+              <View style={styles.barcodeHeader}>
+                <Text style={[styles.label, { color: textColor }]}>Componentes</Text>
+                <TouchableOpacity
+                  style={[styles.addButton, { backgroundColor: '#007AFF' }]}
+                  onPress={() => setCompModalOpen(true)}
+                >
+                  <Ionicons name="search" size={18} color="#fff" />
+                  <Text style={styles.addButtonText}>Buscar</Text>
+                </TouchableOpacity>
+              </View>
+
+              {componentProducts.length === 0 ? (
+                <Text style={[styles.helperText, { color: textColor, opacity: 0.5, textAlign: 'center', marginVertical: 10 }]}>
+                  Nenhum componente adicionado
+                </Text>
+              ) : (
+                componentProducts.map((item) => (
+                  <View key={item.componentProductId} style={styles.componentItem}>
+                    <View style={styles.componentInfo}>
+                      <Text style={[styles.componentTitle, { color: textColor }]} numberOfLines={1}>
+                        {item.componentProductDescription}
+                      </Text>
+                      <Text style={[styles.componentSub, { color: textColor, opacity: 0.6 }]}>
+                        Custo: R$ {(item.componentProductCost || 0).toFixed(2)} | Subtotal: R$ {((item.componentProductCost || 0) * item.quantity).toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.componentActions}>
+                      <TextInput
+                        style={[styles.input, styles.qtyInput, { color: textColor, borderColor }]}
+                        value={item.quantity.toString()}
+                        onChangeText={(val) => updateComponentQuantity(item.componentProductId, val)}
+                        keyboardType="decimal-pad"
+                      />
+                      <TouchableOpacity
+                        style={[styles.removeButtonSmall, { backgroundColor: '#FF3B30' }]}
+                        onPress={() => removeComponent(item.componentProductId)}
+                      >
+                        <Ionicons name="close" size={16} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+
+              <View style={styles.compositeSummary}>
+                <Text style={[styles.summaryText, { color: textColor }]}>
+                  Custo Total da Composição: <Text style={{ fontWeight: 'bold' }}>R$ {parseFloat(cost || '0').toFixed(2)}</Text>
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Botões de Ação */}
@@ -542,6 +731,106 @@ export default function ProductFormScreen() {
           </View>
         </View>
       )}
+      {/* Modal de Busca de Componentes */}
+      <Modal
+        visible={compModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setCompModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>Adicionar Componente</Text>
+              <TouchableOpacity onPress={() => setCompModalOpen(false)}>
+                <Ionicons name="close" size={28} color={textColor} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.searchBox, { borderColor }]}>
+              <TextInput
+                style={[styles.searchInput, { color: textColor }]}
+                placeholder="Nome ou código do componente..."
+                placeholderTextColor={textColor + '80'}
+                value={compSearchText}
+                onChangeText={setCompSearchText}
+                onSubmitEditing={searchComponents}
+                autoFocus
+              />
+              <TouchableOpacity onPress={searchComponents} style={styles.searchIcon}>
+                <Ionicons name="search" size={20} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={compSearchResults}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.searchResultItem, { borderBottomColor: borderColor }]}
+                  onPress={() => addComponent(item)}
+                >
+                  <View>
+                    <Text style={[styles.searchResultTitle, { color: textColor }]}>{item.description}</Text>
+                    <Text style={[styles.searchResultSub, { color: textColor, opacity: 0.6 }]}>
+                      Custo: R$ {item.cost.toFixed(2)} | Preço: R$ {item.price.toFixed(2)}
+                    </Text>
+                  </View>
+                  <Ionicons name="add-circle-outline" size={24} color="#34C759" />
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={() => (
+                !compSearchLoading && compSearchText ? (
+                  <Text style={[styles.emptySearchText, { color: textColor, opacity: 0.5 }]}>
+                    Nenhum produto encontrado
+                  </Text>
+                ) : null
+              )}
+              ListHeaderComponent={() => (
+                compSearchLoading ? <ActivityIndicator style={{ margin: 20 }} color="#007AFF" /> : null
+              )}
+              style={styles.resultsList}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Seleção de Unidade */}
+      <Modal
+        visible={unitModalOpen}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setUnitModalOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setUnitModalOpen(false)}
+        >
+          <View style={[styles.unitModalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor, marginBottom: 16 }]}>Selecione a Unidade</Text>
+            {units.map((u) => (
+              <TouchableOpacity
+                key={u.value}
+                style={[
+                  styles.unitOption,
+                  { borderBottomColor: borderColor },
+                  unit === u.value && { backgroundColor: '#007AFF20' }
+                ]}
+                onPress={() => {
+                  setUnit(u.value);
+                  setUnitModalOpen(false);
+                }}
+              >
+                <Text style={{ color: unit === u.value ? '#007AFF' : textColor, fontSize: 16, fontWeight: unit === u.value ? 'bold' : 'normal' }}>
+                  {u.label}
+                </Text>
+                {unit === u.value && <Ionicons name="checkmark" size={20} color="#007AFF" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -716,10 +1005,162 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 40,
   },
-  picker: {
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  compositionContainer: {
+    marginTop: 16,
+  },
+  separator: {
+    height: 1,
+    marginBottom: 16,
+  },
+  componentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  componentInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+  componentTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  componentSub: {
+    fontSize: 12,
+  },
+  componentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  qtyInput: {
+    width: 60,
+    padding: 6,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  removeButtonSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compositeSummary: {
+    marginTop: 16,
+    alignItems: 'flex-end',
+  },
+  summaryText: {
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    height: '70%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 16,
-    padding: 12,
+  },
+  pickerContainer: {
     borderWidth: 1,
     borderRadius: 8,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  unitModalContent: {
+    margin: 20,
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  unitOption: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  customSwitchContainer: {
+    padding: 4,
+  },
+  customSwitchTrack: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  customSwitchThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  searchIcon: {
+    padding: 8,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  searchResultTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  searchResultSub: {
+    fontSize: 13,
+  },
+  emptySearchText: {
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  resultsList: {
+    flex: 1,
   },
 });

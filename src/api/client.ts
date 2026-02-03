@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const API_BASE =
-    process.env.EXPO_PUBLIC_API_BASE || "https://leonardocoutinho.dev/api";
+    process.env.EXPO_PUBLIC_API_BASE || "https://leonardocoutinho.dev/stock/api";
 
 const TOKEN_KEY = '@app:accessToken';
 const REFRESH_TOKEN_KEY = '@app:refreshToken';
@@ -35,10 +35,44 @@ export const initializeAuth = async () => {
     }
 };
 
+// Helper to decode base64 for JWT payload
+const decodeBase64 = (str: string) => {
+    try {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        let output = '';
+        str = str.replace(/=+$/, '');
+        for (let bc = 0, bs = 0, buffer, i = 0; (buffer = str.charAt(i++));) {
+            buffer = chars.indexOf(buffer);
+            if (buffer === -1) continue;
+            bs = bc % 4 ? bs * 64 + buffer : buffer;
+            if (bc++ % 4) {
+                output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)));
+            }
+        }
+        return output;
+    } catch (e) {
+        return '';
+    }
+};
+
 export const setToken = async (token: string | null) => {
     authToken = token;
     if (token) {
         await AsyncStorage.setItem(TOKEN_KEY, token);
+
+        // Extract tenant from JWT and update domain
+        try {
+            const parts = token.split('.');
+            if (parts.length >= 2) {
+                const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                const decoded = JSON.parse(decodeBase64(payload));
+                if (decoded && (decoded.tenant || decoded.domain)) {
+                    await setDomain(decoded.tenant || decoded.domain);
+                }
+            }
+        } catch (error) {
+            console.error('Error decoding token tenant:', error);
+        }
     } else {
         await AsyncStorage.removeItem(TOKEN_KEY);
     }
@@ -88,9 +122,8 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
         headers["Authorization"] = `Bearer ${authToken}`;
     }
 
-    // Concatenate domain if present
-    const fullPath = domain ? `/${domain}${path}` : path;
-    const url = `${API_BASE}${fullPath}`;
+    // Base URL is used directly, tenant is now in JWT
+    const url = `${API_BASE}${path}`;
 
     console.log(`[HTTP] ${init?.method || 'GET'} ${url}`);
 

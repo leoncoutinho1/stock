@@ -1,3 +1,11 @@
+export type ProductCompositionDto = {
+    componentProductId: string;
+    componentProductDescription?: string;
+    quantity: number;
+    componentProductPrice?: number;
+    componentProductCost?: number;
+};
+
 export type ProductPayload = {
     description: string;
     cost: number;
@@ -8,6 +16,8 @@ export type ProductPayload = {
     unit: string;
     image?: string;
     isActive?: boolean;
+    composite?: boolean;
+    componentProducts?: ProductCompositionDto[];
 };
 
 export type ProductDto = ProductPayload & { id: string };

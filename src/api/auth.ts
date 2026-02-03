@@ -1,4 +1,4 @@
-import { http, setToken, setRefreshToken, setDomain, getToken, getRefreshToken, clearAuth, initializeAuth } from './client';
+import { clearAuth, getRefreshToken, getToken, http, initializeAuth, setDomain, setRefreshToken, setToken } from './client';
 import { TokenDto } from './types';
 
 export const authApi = {
@@ -7,10 +7,12 @@ export const authApi = {
 
     // Login
     login: async (email: string, password: string, domain: string) => {
+        // We set the domain temporarily for the login request if needed, 
+        // but the main change is passing it in the body.
         await setDomain(domain);
         const result = await http<TokenDto>(`/login/authenticate`, {
             method: "POST",
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, tenant: domain }),
         });
 
         if (result.accessToken && result.refreshToken) {
@@ -26,7 +28,7 @@ export const authApi = {
         await setDomain(domain);
         const result = await http<TokenDto>(`/login/register`, {
             method: "POST",
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, tenant: domain }),
         });
 
         if (result.accessToken && result.refreshToken) {

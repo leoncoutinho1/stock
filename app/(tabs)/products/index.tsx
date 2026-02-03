@@ -99,18 +99,14 @@ export default function ProductsListScreen() {
     loadProducts(0, searchText);
   }, []);
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCurrentPage(0);
-      loadProducts(0, searchText, false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [searchText]);
-
-  const handleSearch = (text: string) => {
-    setSearchText(text);
+  // Perform search
+  const handleSearch = (text?: string) => {
+    const searchValue = text !== undefined ? text : searchText;
+    if (text !== undefined) {
+      setSearchText(searchValue);
+    }
+    setCurrentPage(0);
+    loadProducts(0, searchValue, false);
   };
 
   const handleRefresh = () => {
@@ -247,7 +243,8 @@ export default function ProductsListScreen() {
           placeholder="Buscar por descrição ou código de barras..."
           placeholderTextColor={textColor + '80'}
           value={searchText}
-          onChangeText={handleSearch}
+          onChangeText={setSearchText}
+          onSubmitEditing={() => handleSearch()}
         />
         {searchText ? (
           <TouchableOpacity onPress={() => handleSearch('')}>
