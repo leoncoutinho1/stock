@@ -1,5 +1,5 @@
 import { http } from './client';
-import { ResultList, SaleDTO } from './types';
+import { ResultList, SaleDTO, SalesTotalsDTO } from './types';
 
 export const saleApi = {
     getSales: async (params?: { limit?: number; offset?: number; updatedAt?: string }) => {
@@ -27,4 +27,6 @@ export const saleApi = {
         http<void>(`/Sale/${id}`, {
             method: "DELETE",
         }),
+        
+    getSalesTotals: () => http<SalesTotalsDTO[]>('/Sale/GetSalesTotals'),
 };

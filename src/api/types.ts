@@ -61,3 +61,10 @@ export type ResultList<T> = {
     data: T[];
     totalCount: number;
 };
+
+export type SalesTotalsDTO = {
+    period: string;
+    startDate: string;
+    endDate: string;
+    totalValue: number;
+};
