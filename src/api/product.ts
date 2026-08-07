@@ -8,11 +8,19 @@ export interface ProductFilter {
 }
 
 export const productApi = {
-    getProducts: async (filters?: ProductFilter) => {
+    getProducts: async (offsetOrFilter?: number | ProductFilter, limit?: number) => {
+        let filters: ProductFilter = {};
+        if (typeof offsetOrFilter === 'number') {
+            filters.offset = offsetOrFilter;
+            filters.limit = limit;
+        } else if (offsetOrFilter) {
+            filters = offsetOrFilter;
+        }
+
         const params = new URLSearchParams();
         if (filters?.description) params.append("description", filters.description);
-        if (filters?.limit) params.append("limit", filters.limit.toString());
-        if (filters?.offset) params.append("offset", filters.offset.toString());
+        if (filters?.limit !== undefined) params.append("limit", filters.limit.toString());
+        if (filters?.offset !== undefined) params.append("offset", filters.offset.toString());
 
         const query = params.toString();
         const path = `/Product/ListProduct${query ? `?${query}` : ""}`;
@@ -23,7 +31,8 @@ export const productApi = {
         return http<ProductDto[]>(`/Product/GetProductByDescOrBarcode/${encodeURIComponent(text)}`);
     },
 
-    getProduct: (id: string) => http<ProductDto>(`/product/${id}`),
+    getProduct: (id: string | number) => http<ProductDto>(`/product/${id}`),
+    getProductById: (id: string | number) => http<ProductDto>(`/product/${id}`),
 
     createProduct: (payload: ProductPayload) =>
         http<ProductDto>("/product", {
@@ -31,17 +40,19 @@ export const productApi = {
             body: JSON.stringify(payload),
         }),
 
-    updateProduct: (id: string, payload: ProductPayload) => {
-        console.log("Updating product with id:", id);
-        console.log("Payload:", payload);
+    updateProduct: (id: string | number, payload: Partial<ProductPayload>) => {
         return http<ProductDto>(`/product/${id}`, {
             method: "PUT",
             body: JSON.stringify(payload),
         });
     },
 
+    deactivateProduct: (id: string | number) =>
+        http<void>(`/product/${id}`, {
+            method: "DELETE",
+        }),
 
-    deactivateProduct: (id: string) =>
+    deleteProduct: (id: string | number) =>
         http<void>(`/product/${id}`, {
             method: "DELETE",
         }),

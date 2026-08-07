@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    color-scheme: dark;
+  }
+  
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #020617;
+    color: #f8fafc;
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+/* Custom scrollbar for mobile PWA */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}

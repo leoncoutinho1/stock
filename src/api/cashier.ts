@@ -2,9 +2,9 @@ import { http } from "./client";
 import type { ResultList } from "./types";
 
 export interface Cashier {
-    id: string;
+    id: number | string;
     name: string;
-    createdAt: string;
+    createdAt?: string;
 }
 
 export interface CashierInsertDTO {
@@ -12,7 +12,7 @@ export interface CashierInsertDTO {
 }
 
 export interface CashierUpdateDTO {
-    id: string;
+    id: number | string;
     name: string;
 }
 
@@ -35,7 +35,7 @@ export async function listCashiers(
     return http<ResultList<Cashier>>(path);
 }
 
-export async function getCashier(id: string): Promise<Cashier> {
+export async function getCashier(id: number | string): Promise<Cashier> {
     return http<Cashier>(`/Cashier/${id}`);
 }
 
@@ -57,8 +57,16 @@ export async function updateCashier(
     });
 }
 
-export async function deleteCashier(id: string): Promise<void> {
+export async function deleteCashier(id: number | string): Promise<void> {
     return http<void>(`/Cashier/${id}`, {
         method: "DELETE",
     });
 }
+
+export const cashierApi = {
+    getCashiers: listCashiers,
+    getCashier,
+    createCashier,
+    updateCashier,
+    deleteCashier,
+};

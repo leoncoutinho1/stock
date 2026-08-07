@@ -2,9 +2,9 @@ import { http } from "./client";
 import type { ResultList } from "./types";
 
 export interface Checkout {
-    id: string;
+    id: number | string;
     name: string;
-    createdAt: string;
+    createdAt?: string;
 }
 
 export interface CheckoutInsertDTO {
@@ -12,7 +12,7 @@ export interface CheckoutInsertDTO {
 }
 
 export interface CheckoutUpdateDTO {
-    id: string;
+    id: number | string;
     name: string;
 }
 
@@ -35,7 +35,7 @@ export async function listCheckouts(
     return http<ResultList<Checkout>>(path);
 }
 
-export async function getCheckout(id: string): Promise<Checkout> {
+export async function getCheckout(id: number | string): Promise<Checkout> {
     return http<Checkout>(`/Checkout/${id}`);
 }
 
@@ -57,8 +57,16 @@ export async function updateCheckout(
     });
 }
 
-export async function deleteCheckout(id: string): Promise<void> {
+export async function deleteCheckout(id: number | string): Promise<void> {
     return http<void>(`/Checkout/${id}`, {
         method: "DELETE",
     });
 }
+
+export const checkoutApi = {
+    getCheckouts: listCheckouts,
+    getCheckout,
+    createCheckout,
+    updateCheckout,
+    deleteCheckout,
+};

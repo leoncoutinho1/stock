@@ -1,7 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Storage from "@/src/services/storage";
 
 export const API_BASE =
-  process.env.EXPO_PUBLIC_API_BASE || "https://leonardocoutinho.dev/stock/api";
+  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_BASE) ||
+  "https://leonardocoutinho.dev/stock/api";
 
 const TOKEN_KEY = "@app:accessToken";
 const REFRESH_TOKEN_KEY = "@app:refreshToken";
@@ -22,9 +23,9 @@ export const setOnUnauthorized = (callback: () => void) => {
 export const initializeAuth = async () => {
   try {
     const [storedToken, storedRefreshToken, storedDomain] = await Promise.all([
-      AsyncStorage.getItem(TOKEN_KEY),
-      AsyncStorage.getItem(REFRESH_TOKEN_KEY),
-      AsyncStorage.getItem(DOMAIN_KEY),
+      Storage.getItem(TOKEN_KEY),
+      Storage.getItem(REFRESH_TOKEN_KEY),
+      Storage.getItem(DOMAIN_KEY),
     ]);
 
     authToken = storedToken;
@@ -59,7 +60,7 @@ const decodeBase64 = (str: string) => {
 export const setToken = async (token: string | null) => {
   authToken = token;
   if (token) {
-    await AsyncStorage.setItem(TOKEN_KEY, token);
+    await Storage.setItem(TOKEN_KEY, token);
 
     // Extract tenant from JWT and update domain
     try {
@@ -75,7 +76,7 @@ export const setToken = async (token: string | null) => {
       console.error("Error decoding token tenant:", error);
     }
   } else {
-    await AsyncStorage.removeItem(TOKEN_KEY);
+    await Storage.removeItem(TOKEN_KEY);
   }
 };
 
@@ -84,9 +85,9 @@ export const getToken = () => authToken;
 export const setRefreshToken = async (token: string | null) => {
   refreshToken = token;
   if (token) {
-    await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
+    await Storage.setItem(REFRESH_TOKEN_KEY, token);
   } else {
-    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+    await Storage.removeItem(REFRESH_TOKEN_KEY);
   }
 };
 
@@ -95,9 +96,9 @@ export const getRefreshToken = () => refreshToken;
 export const setDomain = async (newDomain: string | null) => {
   domain = newDomain;
   if (newDomain) {
-    await AsyncStorage.setItem(DOMAIN_KEY, newDomain);
+    await Storage.setItem(DOMAIN_KEY, newDomain);
   } else {
-    await AsyncStorage.removeItem(DOMAIN_KEY);
+    await Storage.removeItem(DOMAIN_KEY);
   }
 };
 
@@ -108,9 +109,9 @@ export const clearAuth = async () => {
   refreshToken = null;
   domain = null;
   await Promise.all([
-    AsyncStorage.removeItem(TOKEN_KEY),
-    AsyncStorage.removeItem(REFRESH_TOKEN_KEY),
-    AsyncStorage.removeItem(DOMAIN_KEY),
+    Storage.removeItem(TOKEN_KEY),
+    Storage.removeItem(REFRESH_TOKEN_KEY),
+    Storage.removeItem(DOMAIN_KEY),
   ]);
 };
 

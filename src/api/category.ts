@@ -2,18 +2,21 @@ import { http } from "./client";
 import type { ResultList } from "./types";
 
 export interface Category {
-    id: string;
-    description: string;
-    createdAt: string;
+    id: number | string;
+    name?: string;
+    description?: string;
+    createdAt?: string;
 }
 
 export interface CategoryInsertDTO {
-    description: string;
+    name?: string;
+    description?: string;
 }
 
 export interface CategoryUpdateDTO {
-    id: string;
-    description: string;
+    id: number | string;
+    name?: string;
+    description?: string;
 }
 
 export interface CategoryFilter {
@@ -35,7 +38,7 @@ export async function listCategories(
     return http<ResultList<Category>>(path);
 }
 
-export async function getCategory(id: string): Promise<Category> {
+export async function getCategory(id: number | string): Promise<Category> {
     return http<Category>(`/Category/${id}`);
 }
 
@@ -57,8 +60,16 @@ export async function updateCategory(
     });
 }
 
-export async function deleteCategory(id: string): Promise<void> {
+export async function deleteCategory(id: number | string): Promise<void> {
     return http<void>(`/Category/${id}`, {
         method: "DELETE",
     });
 }
+
+export const categoryApi = {
+    getCategories: listCategories,
+    getCategory,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+};

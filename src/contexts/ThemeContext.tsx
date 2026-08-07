@@ -1,68 +1,76 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { ColorSchemeName, useColorScheme as useDeviceColorScheme } from 'react-native';
+import Storage from '@/src/services/storage';
 
 const THEME_KEY = '@app:theme';
 
-type ThemeMode = 'light' | 'dark' | 'auto';
+export type ThemeMode = 'light' | 'dark' | 'auto';
 
 interface ThemeContextType {
-    theme: ThemeMode;
-    setTheme: (theme: ThemeMode) => Promise<void>;
-    effectiveColorScheme: ColorSchemeName;
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => Promise<void>;
+  effectiveColorScheme: 'light' | 'dark';
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const deviceColorScheme = useDeviceColorScheme();
-    const [theme, setThemeState] = useState<ThemeMode>('auto');
-    const [isLoading, setIsLoading] = useState(true);
+  const [theme, setThemeState] = useState<ThemeMode>('auto');
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('dark');
 
-    useEffect(() => {
-        loadTheme();
-    }, []);
+  useEffect(() => {
+    loadTheme();
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemTheme(mediaQuery.matches ? 'dark' : 'light');
 
-    const loadTheme = async () => {
-        try {
-            const savedTheme = await AsyncStorage.getItem(THEME_KEY);
-            if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
-                setThemeState(savedTheme);
-            }
-        } catch (error) {
-            console.error('Error loading theme:', error);
-        } finally {
-            setIsLoading(false);
-        }
+    const listener = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? 'dark' : 'light');
     };
 
-    const setTheme = async (newTheme: ThemeMode) => {
-        try {
-            await AsyncStorage.setItem(THEME_KEY, newTheme);
-            setThemeState(newTheme);
-        } catch (error) {
-            console.error('Error saving theme:', error);
-        }
-    };
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, []);
 
-    const effectiveColorScheme: ColorSchemeName =
-        theme === 'auto' ? deviceColorScheme : theme;
+  const effectiveColorScheme = theme === 'auto' ? systemTheme : theme;
 
-    if (isLoading) {
-        return null;
+  useEffect(() => {
+    if (effectiveColorScheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
+  }, [effectiveColorScheme]);
 
-    return (
-        <ThemeContext.Provider value={{ theme, setTheme, effectiveColorScheme }}>
-            {children}
-        </ThemeContext.Provider>
-    );
+  const loadTheme = async () => {
+    try {
+      const savedTheme = await Storage.getItem(THEME_KEY);
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
+        setThemeState(savedTheme as ThemeMode);
+      }
+    } catch (error) {
+      console.error('Error loading theme:', error);
+    }
+  };
+
+  const setTheme = async (newTheme: ThemeMode) => {
+    try {
+      await Storage.setItem(THEME_KEY, newTheme);
+      setThemeState(newTheme);
+    } catch (error) {
+      console.error('Error saving theme:', error);
+    }
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme, effectiveColorScheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
-    const context = useContext(ThemeContext);
-    if (context === undefined) {
-        throw new Error('useTheme must be used within a ThemeProvider');
-    }
-    return context;
+  const context = useContext(ThemeContext);
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
 }

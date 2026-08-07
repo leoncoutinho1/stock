@@ -2,18 +2,21 @@ import { http } from "./client";
 import type { ResultList } from "./types";
 
 export interface PaymentForm {
-    id: string;
-    description: string;
-    createdAt: string;
+    id: number | string;
+    name?: string;
+    description?: string;
+    createdAt?: string;
 }
 
 export interface PaymentFormInsertDTO {
-    description: string;
+    name?: string;
+    description?: string;
 }
 
 export interface PaymentFormUpdateDTO {
-    id: string;
-    description: string;
+    id: number | string;
+    name?: string;
+    description?: string;
 }
 
 export interface PaymentFormFilter {
@@ -35,7 +38,7 @@ export async function listPaymentForms(
     return http<ResultList<PaymentForm>>(path);
 }
 
-export async function getPaymentForm(id: string): Promise<PaymentForm> {
+export async function getPaymentForm(id: number | string): Promise<PaymentForm> {
     return http<PaymentForm>(`/PaymentForm/${id}`);
 }
 
@@ -57,8 +60,16 @@ export async function updatePaymentForm(
     });
 }
 
-export async function deletePaymentForm(id: string): Promise<void> {
+export async function deletePaymentForm(id: number | string): Promise<void> {
     return http<void>(`/PaymentForm/${id}`, {
         method: "DELETE",
     });
 }
+
+export const paymentFormApi = {
+    getPaymentForms: listPaymentForms,
+    getPaymentForm,
+    createPaymentForm,
+    updatePaymentForm,
+    deletePaymentForm,
+};
