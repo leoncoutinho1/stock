@@ -1,0 +1,10 @@
+services:
+  stock-pwa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: leoncoutinho1/stock-pwa:latest
+    container_name: stock_pwa
+    restart: always
+    ports:
+      - "3001:80"

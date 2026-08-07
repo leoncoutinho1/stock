@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/src/contexts/ThemeContext";
+import { usePWAInstall } from "@/src/contexts/PWAContext";
 import {
   Wallet,
   Monitor,
@@ -10,15 +11,17 @@ import {
   Sun,
   Laptop,
   ChevronRight,
-  Shield,
+  Download,
   Smartphone,
   LogOut,
+  CheckCircle2,
 } from "lucide-react";
 import { authApi } from "@/src/api/auth";
 
 export const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { isStandalone, promptInstall } = usePWAInstall();
 
   const handleLogout = async () => {
     if (confirm("Deseja realmente encerrar a sessão?")) {
@@ -30,15 +33,43 @@ export const Settings: React.FC = () => {
   return (
     <div className="space-y-4 animate-in fade-in duration-200">
       {/* App Info Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-lg">
-          VB
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-lg">
+            VB
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-100 text-sm">VenderBem Stock PWA</h3>
+            <p className="text-xs text-slate-400">Versão Web PWA Mobile 1.0.0</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-bold text-slate-100 text-sm">VenderBem Stock PWA</h3>
-          <p className="text-xs text-slate-400">Versão Web PWA Mobile 1.0.0</p>
-        </div>
+        {isStandalone && (
+          <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold rounded-xl flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Instalado
+          </span>
+        )}
       </div>
+
+      {/* PWA Install Button Card */}
+      {!isStandalone && (
+        <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-500/30 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-600/20 text-blue-400 rounded-2xl shrink-0">
+              <Smartphone className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-slate-100">Aplicativo de Tela Inicial</h4>
+              <p className="text-[11px] text-slate-400">Instale para acesso rápido tipo app nativo.</p>
+            </div>
+          </div>
+          <button
+            onClick={promptInstall}
+            className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center gap-1.5 active:scale-95 transition shrink-0"
+          >
+            <Download className="w-4 h-4" /> Instalar
+          </button>
+        </div>
+      )}
 
       {/* Navigation Links */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-2 space-y-1">

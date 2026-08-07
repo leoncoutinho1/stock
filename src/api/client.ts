@@ -1,8 +1,14 @@
 import Storage from "@/src/services/storage";
 
+const isLocalDev =
+  (typeof import.meta !== "undefined" && import.meta.env?.DEV) ||
+  (typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"));
+
 export const API_BASE =
-  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_BASE) ||
-  "https://leonardocoutinho.dev/stock/api";
+  (typeof process !== "undefined" && process.env?.VITE_API_BASE) ||
+  (isLocalDev ? "http://localhost:5215" : "/stock/api");
 
 const TOKEN_KEY = "@app:accessToken";
 const REFRESH_TOKEN_KEY = "@app:refreshToken";

@@ -1,44 +1,37 @@
-import { get, set, del } from 'idb-keyval';
-
 /**
- * Storage Service compatible with Expo SecureStore & AsyncStorage APIs for Web PWA
+ * Minimal Session / Token Storage Service for Web PWA
+ * Handles session tokens required for backend HTTP Authorization header
  */
 export const Storage = {
   async getItem(key: string): Promise<string | null> {
     try {
-      const val = await get(key);
-      if (val !== undefined) return val;
       return localStorage.getItem(key);
     } catch (e) {
-      return localStorage.getItem(key);
+      return null;
     }
   },
 
   async setItem(key: string, value: string): Promise<void> {
     try {
-      await set(key, value);
+      localStorage.setItem(key, value);
     } catch (e) {
-      // Fallback to localStorage
+      console.warn("Storage write error:", e);
     }
-    localStorage.setItem(key, value);
   },
 
   async removeItem(key: string): Promise<void> {
     try {
-      await del(key);
+      localStorage.removeItem(key);
     } catch (e) {
-      // Fallback
+      console.warn("Storage remove error:", e);
     }
-    localStorage.removeItem(key);
   }
 };
 
-// Aliases matching Expo SecureStore
 export const SecureStore = {
   getItemAsync: Storage.getItem,
   setItemAsync: Storage.setItem,
   deleteItemAsync: Storage.removeItem,
 };
 
-// Alias matching AsyncStorage
 export default Storage;
