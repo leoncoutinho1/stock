@@ -53,5 +53,6 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     marginBottom: 64, // Altura da BottomNav
+    overflow: "hidden",
   },
 });

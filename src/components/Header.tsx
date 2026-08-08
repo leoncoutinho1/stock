@@ -1,9 +1,9 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Package, LogOut } from "lucide-react";
 import { authApi } from "@/src/api/auth";
 import { theme } from "@/src/styles/theme";
+import { ArrowLeft, LogOut, Package } from "lucide-react";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   title?: string;
@@ -25,7 +25,8 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack }) => {
     if (path.startsWith("/settings/cashiers")) return "Gerenciar Caixas";
     if (path.startsWith("/settings/checkouts")) return "Gerenciar Checkouts";
     if (path.startsWith("/settings/categories")) return "Categorias";
-    if (path.startsWith("/settings/payment-forms")) return "Formas de Pagamento";
+    if (path.startsWith("/settings/payment-forms"))
+      return "Formas de Pagamento";
     if (path.startsWith("/settings")) return "Configurações";
     return "VenderBem Stock";
   };
@@ -55,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack }) => {
         )}
         <View style={styles.titleContainer}>
           <Text style={styles.titleText}>{getPageTitle()}</Text>
-          <Text style={styles.subtitleText}>VenderBem RN Web</Text>
+          <Text style={styles.subtitleText}>VenderBem Web</Text>
         </View>
       </View>
 

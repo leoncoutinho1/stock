@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { PWAProvider } from "./contexts/PWAContext";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { authApi } from "./api/auth";
 import { setOnUnauthorized } from "./api/client";
 import { Layout } from "./components/Layout";
-import { Login } from "./pages/Login";
-import { Products } from "./pages/Products";
-import { ProductDetail } from "./pages/ProductDetail";
-import { Sales } from "./pages/Sales";
-import { NewSale } from "./pages/NewSale";
-import { SaleDetail } from "./pages/SaleDetail";
-import { Settings } from "./pages/Settings";
-import { Categories } from "./pages/Categories";
-import { PaymentForms } from "./pages/PaymentForms";
+import { PWAProvider } from "./contexts/PWAContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { Cashiers } from "./pages/Cashiers";
+import { Categories } from "./pages/Categories";
 import { Checkouts } from "./pages/Checkouts";
+import { Login } from "./pages/Login";
+import { NewSale } from "./pages/NewSale";
+import { PaymentForms } from "./pages/PaymentForms";
+import { ProductDetail } from "./pages/ProductDetail";
+import { Products } from "./pages/Products";
+import { SaleDetail } from "./pages/SaleDetail";
+import { Sales } from "./pages/Sales";
+import { Settings } from "./pages/Settings";
 import { theme } from "./styles/theme";
 
 const getBasename = () => {
@@ -47,7 +47,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Iniciando VenderBem RN Web...</Text>
+        <Text style={styles.loadingText}>Iniciando VenderBem Web...</Text>
       </View>
     );
   }

@@ -1,6 +1,6 @@
 import { Category, categoryApi } from "@/src/api/category";
 import { productApi } from "@/src/api/product";
-import { ProductDto } from "@/src/api/types";
+import { ProductCompositionDto, ProductDto } from "@/src/api/types";
 import { BarcodeScannerModal } from "@/src/components/BarcodeScannerModal";
 import {
   Barcode,
@@ -18,6 +18,7 @@ import {
   Ruler,
   Save,
   Scale,
+  Search,
   Star,
   Tag,
   Trash2,
@@ -55,6 +56,23 @@ export const ProductDetail: React.FC = () => {
   const [validityDays, setValidityDays] = useState("0");
   const [integrateScale, setIntegrateScale] = useState(false);
 
+  // Composite Product Composition State
+  const [componentProducts, setComponentProducts] = useState<
+    ProductCompositionDto[]
+  >([]);
+  const [availableProducts, setAvailableProducts] = useState<ProductDto[]>([]);
+  const [productsCache, setProductsCache] = useState<
+    Record<string, ProductDto>
+  >({});
+  const [componentSearchQuery, setComponentSearchQuery] = useState("");
+  const [componentSearchResults, setComponentSearchResults] = useState<
+    ProductDto[]
+  >([]);
+  const [componentSearchLoading, setComponentSearchLoading] = useState(false);
+  const [isComponentDropdownOpen, setIsComponentDropdownOpen] = useState(false);
+  const [selectedComponentId, setSelectedComponentId] = useState<string>("");
+  const [selectedComponentQty, setSelectedComponentQty] = useState<string>("1");
+
   // Metadata / Audit Fields
   const [createdAt, setCreatedAt] = useState("");
   const [createdBy, setCreatedBy] = useState("");
@@ -69,10 +87,68 @@ export const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     loadCategories();
+    loadAvailableProducts();
     if (isEditing && id) {
       loadProductDetail(id);
     }
   }, [id]);
+
+  // Helper to update productsCache with array of ProductDto
+  const cacheProducts = (prods: ProductDto[]) => {
+    setProductsCache((prev) => {
+      const next = { ...prev };
+      prods.forEach((p) => {
+        if (p && p.id) {
+          next[String(p.id)] = p;
+        }
+      });
+      return next;
+    });
+  };
+
+  // Debounced search for composite product components via backend endpoint /Product/GetProductByDescOrBarcode/{text}
+  useEffect(() => {
+    if (!componentSearchQuery.trim()) {
+      setComponentSearchResults([]);
+      setComponentSearchLoading(false);
+      return;
+    }
+
+    setComponentSearchLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await productApi.searchProducts(
+          componentSearchQuery.trim(),
+        );
+        const list = Array.isArray(res) ? res : (res as any)?.data || [];
+        const filtered = list.filter(
+          (p: ProductDto) => String(p.id) !== String(id),
+        );
+
+        setComponentSearchResults(filtered);
+        cacheProducts(filtered);
+
+        // Auto-select if search brings exactly 1 item
+        if (filtered.length === 1) {
+          const singleProd = filtered[0];
+          setSelectedComponentId(String(singleProd.id));
+          setComponentSearchQuery(
+            `${singleProd.description} (${singleProd.unit || "UN"})`,
+          );
+          setIsComponentDropdownOpen(false);
+        } else if (filtered.length > 1) {
+          setIsComponentDropdownOpen(true);
+        }
+      } catch (e) {
+        console.error("Error searching products for composition:", e);
+        setComponentSearchResults([]);
+      } finally {
+        setComponentSearchLoading(false);
+      }
+    }, 400); // 400ms delay to wait for user to finish typing
+
+    return () => clearTimeout(timer);
+  }, [componentSearchQuery, id]);
 
   const loadCategories = async () => {
     try {
@@ -80,6 +156,18 @@ export const ProductDetail: React.FC = () => {
       setCategories(res.data || []);
     } catch (e) {
       console.error("Error loading categories:", e);
+    }
+  };
+
+  const loadAvailableProducts = async () => {
+    try {
+      const res = await productApi.getProducts(0, 300);
+      const list = Array.isArray(res) ? res : res.data || [];
+      const filtered = list.filter((p) => String(p.id) !== String(id));
+      setAvailableProducts(filtered);
+      cacheProducts(filtered);
+    } catch (e) {
+      console.error("Error loading available products:", e);
     }
   };
 
@@ -137,6 +225,9 @@ export const ProductDetail: React.FC = () => {
         setPhoto(prod.imageUrl || prod.photo || null);
         setIsActive(prod.isActive ?? true);
         setComposite(prod.composite ?? false);
+        if (Array.isArray(prod.componentProducts)) {
+          setComponentProducts(prod.componentProducts);
+        }
         setValidityDays(
           prod.validityDays !== undefined && prod.validityDays !== null
             ? String(prod.validityDays)
@@ -191,6 +282,90 @@ export const ProductDetail: React.FC = () => {
     setMainBarcode(code);
   };
 
+  // Component Products Operations
+  const handleAddComponent = () => {
+    if (!selectedComponentId) return;
+    const qty = parseFloat(selectedComponentQty);
+    if (!qty || qty <= 0) return;
+
+    const allProds = [...componentSearchResults, ...availableProducts];
+    const targetProd =
+      productsCache[String(selectedComponentId)] ||
+      allProds.find(
+        (p) =>
+          String(p.id).toLowerCase() ===
+          String(selectedComponentId).toLowerCase(),
+      );
+
+    const desc =
+      targetProd?.description ||
+      (targetProd as any)?.componentProductDescription ||
+      "";
+    const cost = targetProd?.cost || 0;
+    const price = targetProd?.price || 0;
+
+    const existingIdx = componentProducts.findIndex(
+      (cp) =>
+        String(cp.componentProductId).toLowerCase() ===
+        String(selectedComponentId).toLowerCase(),
+    );
+
+    if (existingIdx >= 0) {
+      const updated = [...componentProducts];
+      updated[existingIdx] = {
+        ...updated[existingIdx],
+        quantity: updated[existingIdx].quantity + qty,
+        componentProductDescription:
+          updated[existingIdx].componentProductDescription || desc,
+      };
+      setComponentProducts(updated);
+    } else {
+      setComponentProducts([
+        ...componentProducts,
+        {
+          componentProductId: String(selectedComponentId),
+          componentProductDescription: desc,
+          quantity: qty,
+          componentProductCost: cost,
+          componentProductPrice: price,
+        },
+      ]);
+    }
+
+    setSelectedComponentId("");
+    setSelectedComponentQty("1");
+    setComponentSearchQuery("");
+    setIsComponentDropdownOpen(false);
+  };
+
+  const handleRemoveComponent = (compProdId: string) => {
+    setComponentProducts(
+      componentProducts.filter(
+        (cp) =>
+          String(cp.componentProductId).toLowerCase() !==
+          String(compProdId).toLowerCase(),
+      ),
+    );
+  };
+
+  const handleUpdateComponentQty = (compProdId: string, newQtyStr: string) => {
+    const newQty = parseFloat(newQtyStr) || 0;
+    setComponentProducts(
+      componentProducts.map((cp) =>
+        String(cp.componentProductId).toLowerCase() ===
+        String(compProdId).toLowerCase()
+          ? { ...cp, quantity: newQty }
+          : cp,
+      ),
+    );
+  };
+
+  // Options list for component selection (search results or pre-loaded fallback)
+  const componentOptionsList =
+    componentSearchQuery.trim().length > 0
+      ? componentSearchResults
+      : availableProducts;
+
   // Calculate live profit margin if price and cost are modified
   const currentCost = parseFloat(costPrice) || 0;
   const currentPrice = parseFloat(price) || 0;
@@ -222,11 +397,18 @@ export const ProductDetail: React.FC = () => {
         imageUrl: photo || undefined,
         isActive,
         composite,
+        componentProducts: composite
+          ? componentProducts.map((cp) => ({
+              componentProductId: cp.componentProductId,
+              quantity: cp.quantity,
+            }))
+          : [],
         validityDays: parseInt(validityDays, 10) || 0,
         integrateScale,
       };
 
       if (isEditing && id) {
+        payload.id = id;
         await productApi.updateProduct(id, payload as any);
       } else {
         await productApi.createProduct(payload as any);
@@ -278,8 +460,8 @@ export const ProductDetail: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
-      <form onSubmit={handleSave} className="space-y-4 pb-12">
+    <div className="h-full overflow-y-auto px-4 pt-4 pb-28 space-y-4 animate-in fade-in duration-200">
+      <form onSubmit={handleSave} className="space-y-4">
         {/* Photo & Active Status Header */}
         <div className="flex flex-col items-center justify-center p-4 bg-slate-900 border border-slate-800 rounded-3xl relative overflow-hidden">
           <div className="w-24 h-24 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden mb-3 relative group">
@@ -368,7 +550,8 @@ export const ProductDetail: React.FC = () => {
           <div className="space-y-2">
             <label className="text-xs text-slate-300 font-medium flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <Barcode className="w-3.5 h-3.5 text-blue-400" /> Código de Barras
+                <Barcode className="w-3.5 h-3.5 text-blue-400" /> Código de
+                Barras
               </span>
               <button
                 type="button"
@@ -628,6 +811,227 @@ export const ProductDetail: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Section for Composite Product Components */}
+        {composite && (
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3.5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Boxes className="w-3.5 h-3.5 text-indigo-400" /> Produtos
+                Componentes (Composição)
+              </h3>
+              <span className="text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-lg border border-indigo-500/20">
+                {componentProducts.length}{" "}
+                {componentProducts.length === 1 ? "item" : "itens"}
+              </span>
+            </div>
+
+            {/* Live Autocomplete Search Input for Component Product */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <div className="sm:col-span-7 space-y-1 relative">
+                <label className="text-[11px] text-slate-300 font-medium flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Search className="w-3 h-3 text-indigo-400" /> Buscar
+                    Produto
+                  </span>
+                  {componentSearchLoading && (
+                    <span className="text-[10px] text-indigo-400 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Buscando...
+                    </span>
+                  )}
+                </label>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={componentSearchQuery}
+                    onFocus={() => setIsComponentDropdownOpen(true)}
+                    onChange={(e) => {
+                      setComponentSearchQuery(e.target.value);
+                      setIsComponentDropdownOpen(true);
+                      if (selectedComponentId) setSelectedComponentId("");
+                    }}
+                    placeholder="Digite a descrição ou código de barras..."
+                    className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 pr-8"
+                  />
+
+                  {selectedComponentId || componentSearchQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedComponentId("");
+                        setComponentSearchQuery("");
+                        setIsComponentDropdownOpen(false);
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ) : null}
+                </div>
+
+                {/* Attached Autocomplete Dropdown List */}
+                {isComponentDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-slate-700/50">
+                    {componentSearchLoading ? (
+                      <div className="p-3 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />{" "}
+                        Buscando no servidor...
+                      </div>
+                    ) : componentOptionsList.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400">
+                        Nenhum produto encontrado.
+                      </div>
+                    ) : (
+                      componentOptionsList.map((p) => {
+                        const isSelected =
+                          String(p.id) === String(selectedComponentId);
+                        const barcode =
+                          p.mainBarcode || p.barcodes?.[0] || p.barCode;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedComponentId(String(p.id));
+                              setComponentSearchQuery(
+                                `${p.description} (${p.unit || "UN"})`,
+                              );
+                              setIsComponentDropdownOpen(false);
+                            }}
+                            className={`w-full text-left p-2.5 transition flex items-center justify-between gap-2 hover:bg-slate-700/60 ${
+                              isSelected
+                                ? "bg-indigo-600/20 text-indigo-300 font-semibold"
+                                : "text-slate-200"
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs truncate">
+                                {p.description}
+                              </p>
+                              <p className="text-[10px] text-slate-400 flex items-center gap-2">
+                                {barcode ? <span>Cód: {barcode}</span> : null}
+                                <span>Un: {p.unit || "UN"}</span>
+                              </p>
+                            </div>
+                            <span className="text-xs font-mono font-semibold text-emerald-400 whitespace-nowrap">
+                              R$ {(p.price || 0).toFixed(2)}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="sm:col-span-3 space-y-1">
+                <label className="text-[11px] text-slate-400 font-medium">
+                  Quantidade
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0.001"
+                  value={selectedComponentQty}
+                  onChange={(e) => setSelectedComponentQty(e.target.value)}
+                  placeholder="1"
+                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="sm:col-span-2 flex items-end">
+                <button
+                  type="button"
+                  onClick={handleAddComponent}
+                  disabled={!selectedComponentId}
+                  className="w-full py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 disabled:opacity-40 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                >
+                  <Plus className="w-4 h-4" /> Adicionar
+                </button>
+              </div>
+            </div>
+
+            {/* List of added component products */}
+            <div className="space-y-2 pt-1">
+              {componentProducts.length === 0 ? (
+                <div className="p-3 bg-slate-800/40 border border-slate-800 rounded-xl text-center text-xs text-slate-500 italic">
+                  Nenhum produto componente adicionado à composição.
+                </div>
+              ) : (
+                componentProducts.map((cp) => {
+                  const cachedProd =
+                    productsCache[String(cp.componentProductId)];
+                  const allProds = [
+                    ...componentSearchResults,
+                    ...availableProducts,
+                  ];
+                  const matchedProd =
+                    cachedProd ||
+                    allProds.find(
+                      (p) =>
+                        String(p.id).toLowerCase() ===
+                        String(cp.componentProductId).toLowerCase(),
+                    );
+
+                  const title =
+                    cp.componentProductDescription &&
+                    cp.componentProductDescription !== "Produto Componente"
+                      ? cp.componentProductDescription
+                      : matchedProd?.description || cp.componentProductId;
+
+                  return (
+                    <div
+                      key={cp.componentProductId}
+                      className="flex items-center justify-between p-3 bg-slate-800/60 border border-slate-700/60 rounded-2xl gap-3 text-xs"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-200 truncate">
+                          {title}
+                        </p>
+                        {matchedProd && (
+                          <p className="text-[11px] text-slate-400">
+                            Custo Unit.: R$ {(matchedProd.cost || 0).toFixed(2)}{" "}
+                            | Preço Unit.: R${" "}
+                            {(matchedProd.price || 0).toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400">Qtd:</span>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0.001"
+                          value={cp.quantity}
+                          onChange={(e) =>
+                            handleUpdateComponentQty(
+                              cp.componentProductId,
+                              e.target.value,
+                            )
+                          }
+                          className="w-16 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 text-center focus:outline-none focus:border-indigo-500 font-mono"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleRemoveComponent(cp.componentProductId)
+                          }
+                          className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                          title="Remover componente"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Section 4: Audit & Metadata (Readonly, shown when editing) */}
         {isEditing && (createdAt || createdBy || updatedAt || updatedBy) && (
