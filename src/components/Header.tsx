@@ -1,7 +1,9 @@
 import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Package, ShoppingCart, Settings, LogOut } from "lucide-react";
+import { ArrowLeft, Package, LogOut } from "lucide-react";
 import { authApi } from "@/src/api/auth";
+import { theme } from "@/src/styles/theme";
 
 interface HeaderProps {
   title?: string;
@@ -29,45 +31,91 @@ export const Header: React.FC<HeaderProps> = ({ title, showBack }) => {
   };
 
   const handleLogout = async () => {
-    if (confirm("Deseja realmente sair da sua conta?")) {
+    if (window.confirm("Deseja realmente sair da sua conta?")) {
       await authApi.logout();
       navigate("/login");
     }
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3.5 flex items-center justify-between transition-colors">
-      <div className="flex items-center gap-3">
+    <View style={styles.header}>
+      <View style={styles.leftContainer}>
         {showBack ? (
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 text-slate-300 hover:text-white rounded-xl bg-slate-800/80 active:scale-95 transition"
-            title="Voltar"
+          <TouchableOpacity
+            onPress={() => navigate(-1)}
+            style={styles.iconButton}
+            activeOpacity={0.7}
           >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+            <ArrowLeft color={theme.colors.textPrimary} size={20} />
+          </TouchableOpacity>
         ) : (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <Package className="w-5 h-5" />
-          </div>
+          <View style={styles.logoBadge}>
+            <Package color={theme.colors.textWhite} size={20} />
+          </View>
         )}
-        <div>
-          <h1 className="font-bold text-slate-100 text-lg tracking-tight leading-none">
-            {getPageTitle()}
-          </h1>
-          <span className="text-[10px] text-blue-400 font-medium tracking-wide uppercase">
-            VenderBem Mobile PWA
-          </span>
-        </div>
-      </div>
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleText}>{getPageTitle()}</Text>
+          <Text style={styles.subtitleText}>VenderBem RN Web</Text>
+        </View>
+      </View>
 
-      <button
-        onClick={handleLogout}
-        className="p-2 text-slate-400 hover:text-red-400 rounded-xl bg-slate-800/60 active:scale-95 transition"
-        title="Sair"
+      <TouchableOpacity
+        onPress={handleLogout}
+        style={styles.iconButton}
+        activeOpacity={0.7}
       >
-        <LogOut className="w-5 h-5" />
-      </button>
-    </header>
+        <LogOut color={theme.colors.danger} size={20} />
+      </TouchableOpacity>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  header: {
+    height: 60,
+    backgroundColor: theme.colors.bgCard,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
+    paddingHorizontal: theme.spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 30,
+  },
+  leftContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+  },
+  iconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.bgElevated,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  titleContainer: {
+    justifyContent: "center",
+  },
+  titleText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  subtitleText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: theme.colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+});

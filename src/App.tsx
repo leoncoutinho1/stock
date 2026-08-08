@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PWAProvider } from "./contexts/PWAContext";
@@ -16,7 +17,7 @@ import { Categories } from "./pages/Categories";
 import { PaymentForms } from "./pages/PaymentForms";
 import { Cashiers } from "./pages/Cashiers";
 import { Checkouts } from "./pages/Checkouts";
-import { Loader2 } from "lucide-react";
+import { theme } from "./styles/theme";
 
 const getBasename = () => {
   if (typeof window === "undefined") return "/";
@@ -44,10 +45,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!isReady) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
-        <p className="text-xs font-medium">Iniciando VenderBem PWA...</p>
-      </div>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Iniciando VenderBem RN Web...</Text>
+      </View>
     );
   }
 
@@ -96,5 +97,20 @@ export const App: React.FC = () => {
     </ThemeProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.bgApp,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing.md,
+  },
+  loadingText: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+});
 
 export default App;

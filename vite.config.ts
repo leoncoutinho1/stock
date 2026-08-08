@@ -11,21 +11,34 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      injectRegister: 'auto',
+      devOptions: {
+        enabled: true,
+        type: 'module'
+      },
+      includeAssets: [
+        'favicon.png',
+        'apple-touch-icon.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+        'icon.png'
+      ],
       manifest: {
         name: 'VenderBem Stock PWA',
         short_name: 'VenderBem',
         description: 'Gerenciamento de Estoque, Produtos e Vendas (PDV Mobile PWA)',
-        theme_color: '#007AFF',
-        background_color: '#0f172a',
+        theme_color: '#3b82f6',
+        background_color: '#020617',
         display: 'standalone',
         orientation: 'portrait',
         start_url: './',
+        scope: './',
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'pwa-512x512.png',
@@ -36,13 +49,14 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest}'],
         runtimeCaching: []
       }
     })
   ],
   resolve: {
     alias: {
+      'react-native': 'react-native-web',
       '@': path.resolve('./')
     }
   },

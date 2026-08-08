@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { productApi } from "@/src/api/product";
 import { categoryApi } from "@/src/api/category";
+import { productApi } from "@/src/api/product";
 import { CategoryDto, ProductDto } from "@/src/api/types";
 import { BarcodeScannerModal } from "@/src/components/BarcodeScannerModal";
 import {
-  Package,
   Barcode,
   Camera,
-  Save,
-  Trash2,
-  Tag,
   DollarSign,
   Layers,
-  ArrowLeft,
   Loader2,
+  Package,
+  Save,
+  Tag,
+  Trash2,
   Upload,
 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 export const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ export const ProductDetail: React.FC = () => {
   const [price, setPrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
-  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [categoryId, setCategoryId] = useState<string>("");
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [photo, setPhoto] = useState<string | null>(null);
 
@@ -40,7 +39,7 @@ export const ProductDetail: React.FC = () => {
   useEffect(() => {
     loadCategories();
     if (isEditing && id) {
-      loadProductDetail(parseInt(id, 10));
+      loadProductDetail(id);
     }
   }, [id]);
 
@@ -53,7 +52,7 @@ export const ProductDetail: React.FC = () => {
     }
   };
 
-  const loadProductDetail = async (prodId: number) => {
+  const loadProductDetail = async (prodId: string) => {
     setLoading(true);
     try {
       const prod = await productApi.getProductById(prodId);
@@ -145,7 +144,11 @@ export const ProductDetail: React.FC = () => {
         <div className="flex flex-col items-center justify-center p-4 bg-slate-900 border border-slate-800 rounded-3xl relative overflow-hidden">
           <div className="w-24 h-24 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden mb-3 relative group">
             {photo ? (
-              <img src={photo} alt="Foto do Produto" className="w-full h-full object-cover" />
+              <img
+                src={photo}
+                alt="Foto do Produto"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <Package className="w-10 h-10 text-slate-600" />
             )}
@@ -181,7 +184,8 @@ export const ProductDetail: React.FC = () => {
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3.5">
           <div className="space-y-1">
             <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-              <Package className="w-3.5 h-3.5 text-blue-400" /> Descrição do Produto
+              <Package className="w-3.5 h-3.5 text-blue-400" /> Descrição do
+              Produto
             </label>
             <input
               type="text"
@@ -196,7 +200,8 @@ export const ProductDetail: React.FC = () => {
           <div className="space-y-1">
             <label className="text-xs text-slate-300 font-medium flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <Barcode className="w-3.5 h-3.5 text-blue-400" /> Código de Barras (EAN/GTIN)
+                <Barcode className="w-3.5 h-3.5 text-blue-400" /> Código de
+                Barras (EAN/GTIN)
               </span>
               <button
                 type="button"
@@ -220,7 +225,8 @@ export const ProductDetail: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Preço de Venda
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Preço de
+                Venda
               </label>
               <input
                 type="number"
@@ -268,7 +274,11 @@ export const ProductDetail: React.FC = () => {
               </label>
               <select
                 value={categoryId || ""}
-                onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : undefined)}
+                onChange={(e) =>
+                  setCategoryId(
+                    e.target.value ? Number(e.target.value) : undefined,
+                  )
+                }
                 className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500"
               >
                 <option value="">Sem categoria</option>
@@ -289,7 +299,11 @@ export const ProductDetail: React.FC = () => {
             disabled={saving}
             className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-semibold text-xs shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 active:scale-95 transition"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
             {isEditing ? "Atualizar Produto" : "Salvar Produto"}
           </button>
 

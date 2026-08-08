@@ -1,62 +1,164 @@
+import { theme } from "@/src/styles/theme";
+import { Package, PlusCircle, Settings, ShoppingBag } from "lucide-react";
 import React from "react";
-import { NavLink } from "react-router-dom";
-import { Package, ShoppingBag, Settings, PlusCircle } from "lucide-react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export const BottomNav: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    if (path === "/sales") return location.pathname === "/sales";
+    return location.pathname.startsWith(path);
+  };
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-4 py-2 flex items-center justify-around pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <NavLink
-        to="/products"
-        className={({ isActive }) =>
-          `flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition ${
-            isActive
-              ? "text-blue-400 font-semibold"
-              : "text-slate-400 hover:text-slate-200"
-          }`
-        }
+    <View style={styles.navBar}>
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigate("/products")}
+        activeOpacity={0.7}
       >
-        <Package className="w-5 h-5" />
-        <span className="text-[11px]">Produtos</span>
-      </NavLink>
+        <Package
+          color={
+            isActive("/products")
+              ? theme.colors.primary
+              : theme.colors.textMuted
+          }
+          size={22}
+        />
+        <Text
+          style={[
+            styles.navLabel,
+            isActive("/products") && styles.navLabelActive,
+          ]}
+        >
+          Produtos
+        </Text>
+      </TouchableOpacity>
 
-      <NavLink
-        to="/sales/new"
-        className="flex flex-col items-center -mt-5"
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigate("/sales/new")}
+        activeOpacity={0.7}
       >
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/40 active:scale-95 transition">
-          <PlusCircle className="w-6 h-6" />
-        </div>
-        <span className="text-[10px] text-blue-400 font-semibold mt-0.5">PDV Venda</span>
-      </NavLink>
+        <PlusCircle
+          color={
+            isActive("/sales/new")
+              ? theme.colors.primary
+              : theme.colors.textMuted
+          }
+          size={22}
+        />
+        <Text
+          style={[
+            styles.navLabel,
+            isActive("/sales/new") && styles.navLabelActive,
+          ]}
+        >
+          Nova venda
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigate("/sales")}
+        activeOpacity={0.7}
+      >
+        <ShoppingBag
+          color={
+            isActive("/sales") ? theme.colors.primary : theme.colors.textMuted
+          }
+          size={22}
+        />
+        <Text
+          style={[styles.navLabel, isActive("/sales") && styles.navLabelActive]}
+        >
+          Vendas
+        </Text>
+      </TouchableOpacity>
 
-      <NavLink
-        to="/sales"
-        end
-        className={({ isActive }) =>
-          `flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition ${
-            isActive
-              ? "text-blue-400 font-semibold"
-              : "text-slate-400 hover:text-slate-200"
-          }`
-        }
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigate("/settings")}
+        activeOpacity={0.7}
       >
-        <ShoppingBag className="w-5 h-5" />
-        <span className="text-[11px]">Vendas</span>
-      </NavLink>
-
-      <NavLink
-        to="/settings"
-        className={({ isActive }) =>
-          `flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition ${
-            isActive
-              ? "text-blue-400 font-semibold"
-              : "text-slate-400 hover:text-slate-200"
-          }`
-        }
-      >
-        <Settings className="w-5 h-5" />
-        <span className="text-[11px]">Ajustes</span>
-      </NavLink>
-    </nav>
+        <Settings
+          color={
+            isActive("/settings")
+              ? theme.colors.primary
+              : theme.colors.textMuted
+          }
+          size={22}
+        />
+        <Text
+          style={[
+            styles.navLabel,
+            isActive("/settings") && styles.navLabelActive,
+          ]}
+        >
+          Ajustes
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  navBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 64,
+    backgroundColor: theme.colors.bgCard,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    paddingHorizontal: theme.spacing.md,
+    zIndex: 40,
+  },
+  navItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    paddingVertical: theme.spacing.xs,
+  },
+  navLabel: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  navLabelActive: {
+    color: theme.colors.primary,
+    fontWeight: "700",
+  },
+  centerNavItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -20,
+    flex: 1,
+  },
+  centerButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  centerNavLabel: {
+    fontSize: 10,
+    color: theme.colors.primary,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+});

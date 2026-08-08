@@ -1,25 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { productApi } from "@/src/api/product";
 import { ProductDto } from "@/src/api/types";
 import { BarcodeScannerModal } from "@/src/components/BarcodeScannerModal";
+import { theme } from "@/src/styles/theme";
 import {
-  Search,
-  Camera,
-  Plus,
-  Package,
-  Barcode,
-  RefreshCw,
-  Loader2,
   AlertCircle,
+  Barcode,
+  Camera,
+  Package,
+  Plus,
+  Search,
   Tag,
+  X,
 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useNavigate } from "react-router-dom";
 
 export const Products: React.FC = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<ProductDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [scanOpen, setScanOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -47,13 +56,7 @@ export const Products: React.FC = () => {
       setErrorMsg("Falha ao carregar produtos. Verifique sua conexão.");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchProducts(searchText);
   };
 
   const handleBarcodeScanned = (code: string) => {
@@ -62,133 +65,160 @@ export const Products: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
-      {/* Action Bar & Search */}
-      <div className="flex items-center gap-2">
-        <form onSubmit={handleSearchSubmit} className="flex-1 relative">
-          <input
-            type="text"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Buscar por nome ou código..."
-            className="w-full pl-9 pr-8 py-2.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {/* Search and Action Bar */}
+      <View style={styles.actionBar}>
+        <View style={styles.searchContainer}>
+          <Search
+            color={theme.colors.textMuted}
+            size={18}
+            style={styles.searchIcon}
           />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          {searchText && (
-            <button
-              type="button"
-              onClick={() => {
+          <TextInput
+            value={searchText}
+            onChangeText={(text) => {
+              setSearchText(text);
+              if (text === "") fetchProducts("");
+            }}
+            onSubmitEditing={() => fetchProducts(searchText)}
+            placeholder="Buscar por nome ou código..."
+            placeholderTextColor={theme.colors.textMuted}
+            style={styles.searchInput}
+          />
+          {searchText ? (
+            <TouchableOpacity
+              onPress={() => {
                 setSearchText("");
                 fetchProducts("");
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-bold"
+              style={styles.clearButton}
             >
-              ✕
-            </button>
-          )}
-        </form>
+              <X color={theme.colors.textSecondary} size={16} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
-        <button
-          onClick={() => setScanOpen(true)}
-          className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-blue-400 rounded-2xl active:scale-95 transition"
-          title="Escanear Código de Barras"
+        <TouchableOpacity
+          onPress={() => setScanOpen(true)}
+          style={styles.actionButton}
+          activeOpacity={0.7}
         >
-          <Camera className="w-5 h-5" />
-        </button>
+          <Camera color={theme.colors.primary} size={20} />
+        </TouchableOpacity>
 
-        <button
-          onClick={() => navigate("/products/new")}
-          className="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center justify-center"
-          title="Novo Produto"
+        <TouchableOpacity
+          onPress={() => navigate("/products/new")}
+          style={styles.primaryActionButton}
+          activeOpacity={0.7}
         >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
+          <Plus color={theme.colors.textWhite} size={20} />
+        </TouchableOpacity>
+      </View>
 
-      {/* Error notification */}
-      {errorMsg && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4" /> {errorMsg}
-          </span>
-          <button
-            onClick={() => fetchProducts(searchText)}
-            className="text-xs text-blue-400 underline font-semibold"
-          >
-            Tentar de novo
-          </button>
-        </div>
-      )}
+      {/* Error Alert */}
+      {errorMsg ? (
+        <View style={styles.errorBox}>
+          <View style={styles.errorRow}>
+            <AlertCircle color={theme.colors.danger} size={16} />
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          </View>
+          <TouchableOpacity onPress={() => fetchProducts(searchText)}>
+            <Text style={styles.retryText}>Tentar de novo</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       {/* Products List */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400 space-y-2">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-xs">Carregando catálogo de produtos...</p>
-        </div>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator color={theme.colors.primary} size="large" />
+          <Text style={styles.loadingText}>
+            Carregando catálogo de produtos...
+          </Text>
+        </View>
       ) : products.length === 0 ? (
-        <div className="text-center py-16 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3">
-          <Package className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-sm font-semibold text-slate-300">Nenhum produto encontrado</h3>
-          <p className="text-xs text-slate-500">
+        <View style={styles.emptyContainer}>
+          <Package color={theme.colors.textMuted} size={48} />
+          <Text style={styles.emptyTitle}>Nenhum produto encontrado</Text>
+          <Text style={styles.emptySubtitle}>
             Cadastre um novo produto ou realize uma nova busca.
-          </p>
-          <button
-            onClick={() => navigate("/products/new")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow"
+          </Text>
+          <TouchableOpacity
+            onPress={() => navigate("/products/new")}
+            style={styles.emptyButton}
+            activeOpacity={0.8}
           >
-            <Plus className="w-4 h-4" /> Cadastrar Produto
-          </button>
-        </div>
+            <Plus color={theme.colors.textWhite} size={16} />
+            <Text style={styles.emptyButtonText}>Cadastrar Produto</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
-        <div className="space-y-2.5">
+        <View style={styles.listContainer}>
           {products.map((prod) => (
-            <div
+            <TouchableOpacity
               key={prod.id}
-              onClick={() => navigate(`/products/${prod.id}`)}
-              className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 p-3.5 rounded-2xl flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition shadow-sm"
+              onPress={() => navigate(`/products/${prod.id}`)}
+              style={styles.productCard}
+              activeOpacity={0.8}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-                  {prod.photo ? (
-                    <img
-                      src={prod.photo}
-                      alt={prod.description}
-                      className="w-full h-full object-cover"
+              <View style={styles.cardLeft}>
+                <View style={styles.imageBox}>
+                  {prod.imageUrl ? (
+                    <Image
+                      source={{ uri: prod.imageUrl }}
+                      style={styles.productImage}
                     />
                   ) : (
-                    <Package className="w-6 h-6 text-slate-500" />
+                    <Package color={theme.colors.textMuted} size={24} />
                   )}
-                </div>
+                </View>
 
-                <div className="space-y-1">
-                  <h4 className="font-semibold text-xs text-slate-100 line-clamp-1">
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName} numberOfLines={1}>
                     {prod.description}
-                  </h4>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1 bg-slate-800 px-2 py-0.5 rounded-md font-mono text-[10px]">
-                      <Barcode className="w-3 h-3 text-blue-400" /> {prod.barCode || "S/ COD"}
-                    </span>
-                    {prod.categoryName && (
-                      <span className="flex items-center gap-1 bg-slate-800 px-2 py-0.5 rounded-md text-[10px] text-slate-300">
-                        <Tag className="w-3 h-3 text-indigo-400" /> {prod.categoryName}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+                  </Text>
 
-              <div className="text-right shrink-0">
-                <span className="text-xs font-bold text-emerald-400 block">
-                  R$ {(prod.price || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">
-                  Estoque: <strong className="text-slate-200">{prod.stockQuantity ?? 0}</strong>
-                </span>
-              </div>
-            </div>
+                  <View style={styles.badgeRow}>
+                    <View style={styles.badge}>
+                      <Barcode color={theme.colors.primary} size={12} />
+                      <Text style={styles.badgeText}>
+                        {prod.mainBarcode || prod.barcodes?.[0] || "S/ COD"}
+                      </Text>
+                    </View>
+                    {prod.categoryDescription ? (
+                      <View style={styles.badge}>
+                        <Tag color="#818cf8" size={12} />
+                        <Text style={styles.badgeText}>
+                          {prod.categoryDescription}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.cardRight}>
+                <Text style={styles.priceText}>
+                  R${" "}
+                  {(prod.price || 0).toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                  })}
+                </Text>
+                <Text style={styles.stockText}>
+                  Estoque:{" "}
+                  <Text style={styles.stockValue}>
+                    {prod.unit === "KG"
+                      ? prod.quantity.toFixed(3)
+                      : prod.quantity.toFixed(0)}
+                  </Text>
+                </Text>
+              </View>
+            </TouchableOpacity>
           ))}
-        </div>
+        </View>
       )}
 
       {/* Barcode Scanner Modal */}
@@ -198,6 +228,213 @@ export const Products: React.FC = () => {
         onScan={handleBarcodeScanned}
         title="Buscar Produto por Código"
       />
-    </div>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.bgApp,
+  },
+  scrollContent: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  actionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    paddingHorizontal: theme.spacing.md,
+  },
+  searchIcon: {
+    marginRight: theme.spacing.xs,
+  },
+  searchInput: {
+    flex: 1,
+    height: 42,
+    color: theme.colors.textPrimary,
+    fontSize: 13,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  actionButton: {
+    width: 42,
+    height: 42,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.bgCard,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryActionButton: {
+    width: 42,
+    height: 42,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorBox: {
+    backgroundColor: theme.colors.dangerLight,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    flex: 1,
+  },
+  errorText: {
+    color: theme.colors.danger,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  retryText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
+  centerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    gap: theme.spacing.md,
+  },
+  loadingText: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+  },
+  emptyContainer: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xxl,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    gap: theme.spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    textAlign: "center",
+  },
+  emptyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+  },
+  emptyButtonText: {
+    color: theme.colors.textWhite,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  listContainer: {
+    gap: theme.spacing.md,
+  },
+  productCard: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+    flex: 1,
+  },
+  imageBox: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.bgElevated,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  productImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  productInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: theme.colors.bgElevated,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+  },
+  badgeText: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+  },
+  cardRight: {
+    alignItems: "flex-end",
+  },
+  priceText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: theme.colors.success,
+  },
+  stockText: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  stockValue: {
+    color: theme.colors.textPrimary,
+    fontWeight: "700",
+  },
+});

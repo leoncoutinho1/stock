@@ -1,16 +1,23 @@
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
+import { useNavigate } from "react-router-dom";
 import { saleApi } from "@/src/api/sale";
-import { SaleDto } from "@/src/api/types";
 import {
   AlertCircle,
   Calendar,
   CreditCard,
-  Loader2,
   Plus,
   ShoppingBag,
   User,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { theme } from "@/src/styles/theme";
 
 export const Sales: React.FC = () => {
   const navigate = useNavigate();
@@ -44,111 +51,272 @@ export const Sales: React.FC = () => {
     const d = new Date(dateStr);
     return isNaN(d.getTime())
       ? dateStr
-      : `${d.toLocaleDateString("pt-BR")} ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+      : `${d.toLocaleDateString("pt-BR")} ${d.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`;
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Header action */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-200">
-          Últimas Vendas Realizadas
-        </h2>
-        <button
-          onClick={() => navigate("/sales/new")}
-          className="px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-blue-500/20 active:scale-95 transition"
+      <View style={styles.headerRow}>
+        <Text style={styles.sectionTitle}>Últimas Vendas Realizadas</Text>
+        <TouchableOpacity
+          onPress={() => navigate("/sales/new")}
+          style={styles.newSaleButton}
+          activeOpacity={0.8}
         >
-          <Plus className="w-4 h-4" /> Nova Venda (PDV)
-        </button>
-      </div>
+          <Plus color={theme.colors.textWhite} size={16} />
+          <Text style={styles.newSaleButtonText}>Nova Venda (PDV)</Text>
+        </TouchableOpacity>
+      </View>
 
-      {errorMsg && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4" /> {errorMsg}
-          </span>
-          <button
-            onClick={fetchSales}
-            className="text-xs text-blue-400 underline font-semibold"
-          >
-            Tentar de novo
-          </button>
-        </div>
-      )}
+      {/* Error Alert */}
+      {errorMsg ? (
+        <View style={styles.errorBox}>
+          <View style={styles.errorRow}>
+            <AlertCircle color={theme.colors.danger} size={16} />
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          </View>
+          <TouchableOpacity onPress={fetchSales}>
+            <Text style={styles.retryText}>Tentar de novo</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
+      {/* Loading / Empty / List */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-2">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-xs">Carregando histórico de vendas...</p>
-        </div>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator color={theme.colors.primary} size="large" />
+          <Text style={styles.loadingText}>Carregando histórico de vendas...</Text>
+        </View>
       ) : sales.length === 0 ? (
-        <div className="text-center py-16 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3">
-          <ShoppingBag className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-sm font-semibold text-slate-300">
-            Nenhuma venda registrada
-          </h3>
-          <p className="text-xs text-slate-500">
+        <View style={styles.emptyContainer}>
+          <ShoppingBag color={theme.colors.textMuted} size={48} />
+          <Text style={styles.emptyTitle}>Nenhuma venda registrada</Text>
+          <Text style={styles.emptySubtitle}>
             Abra uma nova venda no PDV Mobile para registrar seus pedidos.
-          </p>
-          <button
-            onClick={() => navigate("/sales/new")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow"
+          </Text>
+          <TouchableOpacity
+            onPress={() => navigate("/sales/new")}
+            style={styles.emptyButton}
+            activeOpacity={0.8}
           >
-            <Plus className="w-4 h-4" /> Iniciar Venda
-          </button>
-        </div>
+            <Plus color={theme.colors.textWhite} size={16} />
+            <Text style={styles.emptyButtonText}>Iniciar Venda</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
-        <div className="space-y-2.5">
+        <View style={styles.listContainer}>
           {sales.map((sale, idx) => {
             const rawDate = sale.saleDate || sale.createdAt;
             const totalValue = sale.totalValue ?? sale.total ?? sale.totalAmount ?? 0;
 
             return (
-              <div
+              <TouchableOpacity
                 key={sale.id || idx}
-                onClick={() =>
+                onPress={() =>
                   sale.id && navigate(`/sales/${sale.id}`, { state: { sale } })
                 }
-                className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-sm cursor-pointer active:scale-[0.99] transition"
+                style={styles.saleCard}
+                activeOpacity={0.8}
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
-                    <Calendar className="w-4 h-4 text-blue-400" />
-                    <span>{formatDate(rawDate)}</span>
-                  </div>
+                <View style={styles.cardLeft}>
+                  <View style={styles.dateRow}>
+                    <Calendar color={theme.colors.primary} size={16} />
+                    <Text style={styles.dateText}>{formatDate(rawDate)}</Text>
+                  </View>
 
-                  {(sale.clientName || sale.paymentFormName) && (
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                      {sale.clientName && (
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3 text-blue-400" />
-                          {sale.clientName}
-                        </span>
-                      )}
-                      {sale.paymentFormName && (
-                        <span className="flex items-center gap-1">
-                          <CreditCard className="w-3 h-3 text-emerald-400" />
-                          {sale.paymentFormName}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                  {sale.clientName || sale.paymentFormName ? (
+                    <View style={styles.infoRow}>
+                      {sale.clientName ? (
+                        <View style={styles.tagItem}>
+                          <User color={theme.colors.primary} size={12} />
+                          <Text style={styles.tagText}>{sale.clientName}</Text>
+                        </View>
+                      ) : null}
+                      {sale.paymentFormName ? (
+                        <View style={styles.tagItem}>
+                          <CreditCard color={theme.colors.success} size={12} />
+                          <Text style={styles.tagText}>{sale.paymentFormName}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
 
-                <div className="text-right shrink-0">
-                  <span className="text-base font-extrabold text-emerald-400 block">
+                <View style={styles.cardRight}>
+                  <Text style={styles.totalText}>
                     R${" "}
                     {Number(totalValue).toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
-                  </span>
-                </div>
-              </div>
+                  </Text>
+                </View>
+              </TouchableOpacity>
             );
           })}
-        </div>
+        </View>
       )}
-    </div>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.bgApp,
+  },
+  scrollContent: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  newSaleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+  },
+  newSaleButtonText: {
+    color: theme.colors.textWhite,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  errorBox: {
+    backgroundColor: theme.colors.dangerLight,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    flex: 1,
+  },
+  errorText: {
+    color: theme.colors.danger,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  retryText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
+  centerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    gap: theme.spacing.md,
+  },
+  loadingText: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+  },
+  emptyContainer: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xxl,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    gap: theme.spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: theme.colors.textMuted,
+    textAlign: "center",
+  },
+  emptyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+  },
+  emptyButtonText: {
+    color: theme.colors.textWhite,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  listContainer: {
+    gap: theme.spacing.md,
+  },
+  saleCard: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cardLeft: {
+    gap: 4,
+    flex: 1,
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+  },
+  dateText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+    marginTop: 2,
+  },
+  tagItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  tagText: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+  },
+  cardRight: {
+    alignItems: "flex-end",
+  },
+  totalText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: theme.colors.success,
+  },
+});

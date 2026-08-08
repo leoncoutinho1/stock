@@ -11,16 +11,52 @@ export type ProductPayload = {
     cost: number;
     price: number;
     quantity: number;
-    barcodes: string[];
-    categoryId: string;
     unit: string;
+    categoryId: string;
+    barcodes?: string[];
+    imageUrl?: string;
     image?: string;
     isActive?: boolean;
     composite?: boolean;
+    validityDays?: number;
+    integrateScale?: boolean;
+    mainBarcode?: string | null;
     componentProducts?: ProductCompositionDto[];
 };
 
-export type ProductDto = ProductPayload & { id: string };
+export type ProductDTO = {
+    id: string;
+    description: string;
+    cost: number;
+    price: number;
+    profitMargin?: number;
+    quantity: number;
+    unit: string;
+    categoryId: string;
+    categoryDescription?: string;
+    createdAt?: string;
+    createdBy?: string;
+    updatedAt?: string;
+    updatedBy?: string;
+    imageUrl?: string;
+    image?: string;
+    isActive?: boolean;
+    composite?: boolean;
+    validityDays?: number;
+    integrateScale?: boolean;
+    mainBarcode?: string | null;
+    barcodes: string[];
+    componentProducts?: ProductCompositionDto[];
+
+    // Optional legacy fields for UI compatibility
+    barCode?: string;
+    costPrice?: number;
+    stockQuantity?: number;
+    photo?: string;
+    categoryName?: string;
+};
+
+export type ProductDto = ProductDTO;
 
 export type SaleProductDTO = {
     saleId?: string;

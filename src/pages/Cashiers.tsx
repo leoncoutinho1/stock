@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { cashierApi } from "@/src/api/cashier";
-import { Wallet, Plus, Trash2, Loader2 } from "lucide-react";
+import { Wallet, Plus, Trash2 } from "lucide-react";
+import { theme } from "@/src/styles/theme";
 
 export const Cashiers: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
@@ -25,8 +35,7 @@ export const Cashiers: React.FC = () => {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async () => {
     if (!name.trim()) return;
     setSubmitting(true);
     try {
@@ -34,84 +43,211 @@ export const Cashiers: React.FC = () => {
       setName("");
       loadItems();
     } catch (e) {
-      alert("Erro ao criar caixa.");
+      window.alert("Erro ao criar caixa.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: any) => {
-    if (!confirm("Excluir este caixa?")) return;
+    if (!window.confirm("Excluir este caixa?")) return;
     try {
       await cashierApi.deleteCashier(id);
       loadItems();
     } catch (e) {
-      alert("Erro ao excluir.");
+      window.alert("Erro ao excluir.");
     }
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
-      <form onSubmit={handleCreate} className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
-        <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-          <Wallet className="w-4 h-4 text-blue-400" /> Novo Operador de Caixa
-        </h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="ex: Caixa Principal, Operador João"
-            className="flex-1 px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-          />
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 active:scale-95 transition disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            Salvar
-          </button>
-        </div>
-      </form>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.card}>
+        <View style={styles.titleRow}>
+          <Wallet color={theme.colors.primary} size={16} />
+          <Text style={styles.cardTitle}>Novo Operador de Caixa</Text>
+        </View>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-2">
-        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Caixas Cadastrados</h3>
+        <View style={styles.formRow}>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="ex: Caixa Principal, Operador João"
+            placeholderTextColor={theme.colors.textMuted}
+            style={styles.input}
+          />
+          <TouchableOpacity
+            onPress={handleCreate}
+            disabled={submitting}
+            style={[styles.saveButton, submitting && styles.buttonDisabled]}
+            activeOpacity={0.8}
+          >
+            {submitting ? (
+              <ActivityIndicator color={theme.colors.textWhite} size="small" />
+            ) : (
+              <>
+                <Plus color={theme.colors.textWhite} size={16} />
+                <Text style={styles.saveButtonText}>Salvar</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionHeaderTitle}>Caixas Cadastrados</Text>
+
         {loading ? (
-          <div className="py-8 text-center text-slate-400 text-xs">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto mb-1" />
-            Carregando...
-          </div>
+          <View style={styles.centerContainer}>
+            <ActivityIndicator color={theme.colors.primary} size="small" />
+            <Text style={styles.loadingText}>Carregando...</Text>
+          </View>
         ) : items.length === 0 ? (
-          <p className="text-center py-6 text-slate-500 text-xs">Nenhum caixa cadastrado.</p>
+          <Text style={styles.emptyText}>Nenhum caixa cadastrado.</Text>
         ) : (
-          <div className="space-y-1.5">
+          <View style={styles.listContainer}>
             {items.map((c) => {
               const label = c.name || c.description || c.title || `Caixa #${c.id}`;
               return (
-                <div
-                  key={c.id}
-                  className="p-3 bg-slate-800/60 border border-slate-700/60 rounded-2xl flex items-center justify-between text-xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
-                      <Wallet className="w-4 h-4" />
-                    </div>
-                    <span className="font-semibold text-slate-100">{label}</span>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(c.id)}
-                    className="p-1 text-slate-500 hover:text-red-400 rounded-lg"
+                <View key={c.id} style={styles.row}>
+                  <View style={styles.rowLeft}>
+                    <View style={styles.iconBox}>
+                      <Wallet color={theme.colors.primary} size={16} />
+                    </View>
+                    <Text style={styles.rowName}>{label}</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => handleDelete(c.id)}
+                    style={styles.deleteButton}
+                    activeOpacity={0.7}
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                    <Trash2 color={theme.colors.textMuted} size={16} />
+                  </TouchableOpacity>
+                </View>
               );
             })}
-          </div>
+          </View>
         )}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.bgApp,
+  },
+  scrollContent: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  card: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    gap: theme.spacing.md,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+  },
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  formRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: theme.colors.bgInput,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    color: theme.colors.textPrimary,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: theme.colors.textWhite,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sectionHeaderTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: theme.colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  centerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: theme.spacing.xl,
+    gap: theme.spacing.xs,
+  },
+  loadingText: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    paddingVertical: theme.spacing.lg,
+  },
+  listContainer: {
+    gap: theme.spacing.xs,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: theme.colors.bgElevated,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+  },
+  rowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+  },
+  iconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
+  },
+  deleteButton: {
+    padding: 6,
+  },
+});

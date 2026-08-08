@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { categoryApi } from "@/src/api/category";
-import { CategoryDto } from "@/src/api/types";
-import { Tag, Plus, Trash2, Loader2 } from "lucide-react";
+import { Tag, Plus, Trash2 } from "lucide-react";
+import { theme } from "@/src/styles/theme";
 
 export const Categories: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -26,8 +35,7 @@ export const Categories: React.FC = () => {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async () => {
     if (!name.trim()) return;
 
     setSubmitting(true);
@@ -36,94 +44,225 @@ export const Categories: React.FC = () => {
       setName("");
       loadCategories();
     } catch (e) {
-      alert("Erro ao salvar categoria.");
+      window.alert("Erro ao salvar categoria.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: any) => {
-    if (!confirm("Excluir esta categoria?")) return;
+    if (!window.confirm("Excluir esta categoria?")) return;
     try {
       await categoryApi.deleteCategory(id);
       loadCategories();
     } catch (e) {
-      alert("Erro ao excluir categoria.");
+      window.alert("Erro ao excluir categoria.");
     }
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Create form */}
-      <form onSubmit={handleCreate} className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
-        <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-          <Tag className="w-4 h-4 text-purple-400" /> Nova Categoria
-        </h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            required
+      <View style={styles.card}>
+        <View style={styles.titleRow}>
+          <Tag color="#c084fc" size={16} />
+          <Text style={styles.cardTitle}>Nova Categoria</Text>
+        </View>
+
+        <View style={styles.formRow}>
+          <TextInput
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChangeText={setName}
             placeholder="Descrição / Nome da categoria (ex: Bebidas, Roupas...)"
-            className="flex-1 px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            placeholderTextColor={theme.colors.textMuted}
+            style={styles.input}
           />
-          <button
-            type="submit"
+          <TouchableOpacity
+            onPress={handleCreate}
             disabled={submitting}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 active:scale-95 transition disabled:opacity-50"
+            style={[styles.saveButton, submitting && styles.buttonDisabled]}
+            activeOpacity={0.8}
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            Salvar
-          </button>
-        </div>
-      </form>
+            {submitting ? (
+              <ActivityIndicator color={theme.colors.textWhite} size="small" />
+            ) : (
+              <>
+                <Plus color={theme.colors.textWhite} size={16} />
+                <Text style={styles.saveButtonText}>Salvar</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* List */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-2">
-        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Categorias Cadastradas</h3>
+      <View style={styles.card}>
+        <Text style={styles.sectionHeaderTitle}>Categorias Cadastradas</Text>
 
         {loading ? (
-          <div className="py-8 text-center text-slate-400 text-xs">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto mb-1" />
-            Carregando...
-          </div>
+          <View style={styles.centerContainer}>
+            <ActivityIndicator color={theme.colors.primary} size="small" />
+            <Text style={styles.loadingText}>Carregando...</Text>
+          </View>
         ) : categories.length === 0 ? (
-          <p className="text-center py-6 text-slate-500 text-xs">Nenhuma categoria cadastrada.</p>
+          <Text style={styles.emptyText}>Nenhuma categoria cadastrada.</Text>
         ) : (
-          <div className="space-y-1.5">
+          <View style={styles.listContainer}>
             {categories.map((cat) => {
               const label = cat.description || cat.name || cat.title || `Categoria #${cat.id}`;
               return (
-                <div
-                  key={cat.id}
-                  className="p-3 bg-slate-800/60 border border-slate-700/60 rounded-2xl flex items-center justify-between text-xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl">
-                      <Tag className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-semibold text-slate-100 block">{label}</span>
-                      {cat.createdAt && (
-                        <span className="text-[10px] text-slate-500 block">
+                <View key={cat.id} style={styles.categoryRow}>
+                  <View style={styles.categoryLeft}>
+                    <View style={styles.iconBox}>
+                      <Tag color="#c084fc" size={16} />
+                    </View>
+                    <View>
+                      <Text style={styles.categoryName}>{label}</Text>
+                      {cat.createdAt ? (
+                        <Text style={styles.categoryDate}>
                           {new Date(cat.createdAt).toLocaleDateString("pt-BR")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(cat.id)}
-                    className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg"
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => handleDelete(cat.id)}
+                    style={styles.deleteButton}
+                    activeOpacity={0.7}
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                    <Trash2 color={theme.colors.textMuted} size={16} />
+                  </TouchableOpacity>
+                </View>
               );
             })}
-          </div>
+          </View>
         )}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.bgApp,
+  },
+  scrollContent: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  card: {
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    gap: theme.spacing.md,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+  },
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  formRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: theme.colors.bgInput,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    color: theme.colors.textPrimary,
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: theme.colors.textWhite,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sectionHeaderTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: theme.colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  centerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: theme.spacing.xl,
+    gap: theme.spacing.xs,
+  },
+  loadingText: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    paddingVertical: theme.spacing.lg,
+  },
+  listContainer: {
+    gap: theme.spacing.xs,
+  },
+  categoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: theme.colors.bgElevated,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+  },
+  categoryLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.md,
+  },
+  iconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: "rgba(168, 85, 247, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: theme.colors.textPrimary,
+  },
+  categoryDate: {
+    fontSize: 10,
+    color: theme.colors.textMuted,
+    marginTop: 2,
+  },
+  deleteButton: {
+    padding: 6,
+  },
+});

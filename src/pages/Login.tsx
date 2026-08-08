@@ -1,4 +1,14 @@
 import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "@/src/api/auth";
 import Storage from "@/src/services/storage";
@@ -15,9 +25,8 @@ import {
   Fingerprint,
   Eye,
   EyeOff,
-  Loader2,
-  CheckCircle2,
 } from "lucide-react";
+import { theme } from "@/src/styles/theme";
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +36,6 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isBiometricsAvailable, setIsBiometricsAvailable] = useState(false);
-  const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,17 +54,12 @@ export const Login: React.FC = () => {
       if (savedEmail) setEmail(savedEmail);
       if (savedDomain) setDomain(savedDomain);
       if (savedPassword) setPassword(savedPassword);
-
-      if (savedEmail && savedPassword && savedDomain) {
-        setHasSavedCredentials(true);
-      }
     } catch (e) {
       console.error("Error loading saved auth state:", e);
     }
   };
 
-  const handleLogin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleLogin = async () => {
     setErrorMessage(null);
 
     if (!email || !password || !domain) {
@@ -117,103 +120,255 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Radial Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-600/20 blur-3xl rounded-full pointer-events-none" />
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.card}>
+          {/* Header */}
+          <View style={styles.brandHeader}>
+            <View style={styles.iconContainer}>
+              <Package color={theme.colors.textWhite} size={32} />
+            </View>
+            <Text style={styles.brandTitle}>VenderBem</Text>
+            <Text style={styles.brandSubtitle}>
+              Sistema de Estoque e PDV React Native Web
+            </Text>
+          </View>
 
-      <div className="w-full max-w-sm bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl z-10 relative space-y-6">
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white mx-auto shadow-xl shadow-blue-500/20">
-            <Package className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">VenderBem</h1>
-          <p className="text-xs text-slate-400">Sistema de Estoque e PDV Mobile PWA</p>
-        </div>
+          {/* Error Message */}
+          {errorMessage ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
 
-        {/* Error Alert */}
-        {errorMessage && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium text-center animate-in fade-in">
-            {errorMessage}
-          </div>
-        )}
-
-        {/* Form Inputs */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-blue-400" /> E-mail
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seuemail@empresa.com"
-              className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-blue-400" /> Domínio / Tenant
-            </label>
-            <input
-              type="text"
-              required
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              placeholder="ex: minhaloja"
-              className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-blue-400" /> Senha
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 pr-10 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+          {/* Form */}
+          <View style={styles.formGroup}>
+            <View style={styles.inputContainer}>
+              <View style={styles.labelRow}>
+                <Mail color={theme.colors.primary} size={14} />
+                <Text style={styles.label}>E-mail</Text>
+              </View>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="seuemail@empresa.com"
+                placeholderTextColor={theme.colors.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
+            </View>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 active:scale-95 transition disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Entrar no Sistema"}
-          </button>
-        </form>
+            <View style={styles.inputContainer}>
+              <View style={styles.labelRow}>
+                <Globe color={theme.colors.primary} size={14} />
+                <Text style={styles.label}>Domínio / Tenant</Text>
+              </View>
+              <TextInput
+                value={domain}
+                onChangeText={setDomain}
+                placeholder="ex: minhaloja"
+                placeholderTextColor={theme.colors.textMuted}
+                autoCapitalize="none"
+                style={styles.input}
+              />
+            </View>
 
-        {/* Biometrics Login Button */}
-        {isBiometricsAvailable && (
-          <div className="pt-2 border-t border-slate-800 text-center">
-            <button
-              onClick={handleBiometricAuth}
+            <View style={styles.inputContainer}>
+              <View style={styles.labelRow}>
+                <Lock color={theme.colors.primary} size={14} />
+                <Text style={styles.label}>Senha</Text>
+              </View>
+              <View style={styles.passwordWrapper}>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
+                  placeholderTextColor={theme.colors.textMuted}
+                  secureTextEntry={!showPassword}
+                  style={[styles.input, { flex: 1 }]}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? (
+                    <EyeOff color={theme.colors.textSecondary} size={18} />
+                  ) : (
+                    <Eye color={theme.colors.textSecondary} size={18} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleLogin}
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700/80 text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded-xl font-medium text-xs flex items-center justify-center gap-2 active:scale-95 transition"
+              style={[styles.loginButton, loading && styles.buttonDisabled]}
+              activeOpacity={0.8}
             >
-              <Fingerprint className="w-4 h-4 text-blue-400" />
-              Entrar com Biometria (TouchID / FaceID)
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+              {loading ? (
+                <ActivityIndicator color={theme.colors.textWhite} size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>Entrar no Sistema</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Biometrics */}
+          {isBiometricsAvailable ? (
+            <View style={styles.bioContainer}>
+              <TouchableOpacity
+                onPress={handleBiometricAuth}
+                disabled={loading}
+                style={styles.bioButton}
+                activeOpacity={0.8}
+              >
+                <Fingerprint color={theme.colors.primary} size={18} />
+                <Text style={styles.bioButtonText}>
+                  Entrar com Biometria (TouchID / FaceID)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.bgApp,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.lg,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: theme.colors.bgCard,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+  },
+  brandHeader: {
+    alignItems: "center",
+    marginBottom: theme.spacing.xl,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: theme.spacing.md,
+  },
+  brandTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  brandSubtitle: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+  },
+  errorBox: {
+    backgroundColor: theme.colors.dangerLight,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+  },
+  errorText: {
+    color: theme.colors.danger,
+    fontSize: 13,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  formGroup: {
+    gap: theme.spacing.lg,
+  },
+  inputContainer: {
+    gap: theme.spacing.xs,
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: theme.colors.textSecondary,
+  },
+  input: {
+    backgroundColor: theme.colors.bgInput,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  passwordWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 12,
+  },
+  loginButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: theme.spacing.md,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  loginButtonText: {
+    color: theme.colors.textWhite,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  bioContainer: {
+    marginTop: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
+  },
+  bioButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.bgElevated,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  bioButtonText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+});
