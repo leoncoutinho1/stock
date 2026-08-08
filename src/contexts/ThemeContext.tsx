@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import Storage from '@/src/services/storage';
 
 const THEME_KEY = '@app:theme';
@@ -13,32 +13,43 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Helper to synchronously detect system preference
+function getSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+// Apply to DOM immediately
+function applyThemeToDom(scheme: 'light' | 'dark') {
+  if (scheme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>('auto');
-  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('dark');
-
-  useEffect(() => {
-    loadTheme();
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setSystemTheme(mediaQuery.matches ? 'dark' : 'light');
-
-    const listener = (e: MediaQueryListEvent) => {
-      setSystemTheme(e.matches ? 'dark' : 'light');
-    };
-
-    mediaQuery.addEventListener('change', listener);
-    return () => mediaQuery.removeEventListener('change', listener);
-  }, []);
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(getSystemTheme);
 
   const effectiveColorScheme = theme === 'auto' ? systemTheme : theme;
 
-  useEffect(() => {
-    if (effectiveColorScheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+  // Apply synchronously before first paint to prevent flash
+  useLayoutEffect(() => {
+    applyThemeToDom(effectiveColorScheme);
   }, [effectiveColorScheme]);
+
+  // Load persisted theme and watch system preference changes
+  useEffect(() => {
+    loadTheme();
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const listener = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? 'dark' : 'light');
+    };
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, []);
 
   const loadTheme = async () => {
     try {

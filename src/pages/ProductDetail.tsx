@@ -452,7 +452,7 @@ export const ProductDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+      <div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
         <p className="text-xs">Carregando detalhes do produto...</p>
       </div>
@@ -463,8 +463,8 @@ export const ProductDetail: React.FC = () => {
     <div className="h-full overflow-y-auto px-4 pt-4 pb-28 space-y-4 animate-in fade-in duration-200">
       <form onSubmit={handleSave} className="space-y-4">
         {/* Photo & Active Status Header */}
-        <div className="flex flex-col items-center justify-center p-4 bg-slate-900 border border-slate-800 rounded-3xl relative overflow-hidden">
-          <div className="w-24 h-24 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden mb-3 relative group">
+        <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl relative overflow-hidden">
+          <div className="w-24 h-24 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden mb-3 relative group">
             {photo ? (
               <img
                 src={photo}
@@ -472,7 +472,7 @@ export const ProductDetail: React.FC = () => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Package className="w-10 h-10 text-slate-600" />
+              <Package className="w-10 h-10 text-slate-400 dark:text-slate-600" />
             )}
             <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white cursor-pointer transition">
               <Upload className="w-6 h-6" />
@@ -527,13 +527,13 @@ export const ProductDetail: React.FC = () => {
         )}
 
         {/* Section 1: Basic Information */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3.5">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 space-y-3.5">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <Package className="w-3.5 h-3.5 text-blue-400" /> Dados Principais
           </h3>
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-300 font-medium">
+            <label className="text-xs text-slate-600 dark:text-slate-300 font-medium">
               Descrição do Produto *
             </label>
             <input
@@ -542,13 +542,13 @@ export const ProductDetail: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="ex: CHA VERDE LEAO LIMAO ZERO 300ML"
-              className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
           </div>
 
           {/* Barcodes Management Element */}
           <div className="space-y-2">
-            <label className="text-xs text-slate-300 font-medium flex items-center justify-between">
+            <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Barcode className="w-3.5 h-3.5 text-blue-400" /> Código de
                 Barras
@@ -575,7 +575,7 @@ export const ProductDetail: React.FC = () => {
                   }
                 }}
                 placeholder="Digite um código e clique em Adicionar"
-                className="flex-1 px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 font-mono placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                className="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
               <button
                 type="button"
@@ -589,7 +589,7 @@ export const ProductDetail: React.FC = () => {
             {/* List of Barcodes */}
             <div className="flex flex-wrap gap-2 pt-1">
               {barcodes.length === 0 ? (
-                <span className="text-[11px] text-slate-500 italic">
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
                   Nenhum código de barras cadastrado
                 </span>
               ) : (
@@ -600,8 +600,8 @@ export const ProductDetail: React.FC = () => {
                       key={code}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono transition ${
                         isMain
-                          ? "bg-amber-500/10 border-amber-500/50 text-amber-300 shadow-sm shadow-amber-500/10 ring-1 ring-amber-500/30"
-                          : "bg-slate-800/80 border-slate-700/80 text-slate-300 hover:border-slate-600"
+                          ? "bg-amber-500/10 border-amber-500/50 text-amber-600 dark:text-amber-300 shadow-sm shadow-amber-500/10 ring-1 ring-amber-500/30"
+                          : "bg-slate-100 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600"
                       }`}
                     >
                       <button
@@ -618,7 +618,7 @@ export const ProductDetail: React.FC = () => {
                           className={`w-3.5 h-3.5 transition ${
                             isMain
                               ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.5)]"
-                              : "text-slate-500 hover:text-amber-400"
+                              : "text-slate-400 dark:text-slate-500 hover:text-amber-400"
                           }`}
                         />
                       </button>
@@ -634,7 +634,7 @@ export const ProductDetail: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveBarcode(code)}
-                        className="text-slate-500 hover:text-red-400 ml-1 transition"
+                        className="text-slate-400 dark:text-slate-500 hover:text-red-400 ml-1 transition"
                         title="Remover código"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -648,13 +648,13 @@ export const ProductDetail: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-purple-400" /> Categoria
               </label>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500"
               >
                 <option value="">Sem categoria</option>
                 {categories.map((c) => (
@@ -666,13 +666,13 @@ export const ProductDetail: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
                 <Ruler className="w-3.5 h-3.5 text-amber-400" /> Unidade
               </label>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500"
               >
                 <option value="UN">UN (Unidade)</option>
                 <option value="KG">KG (Quilograma)</option>
@@ -684,15 +684,15 @@ export const ProductDetail: React.FC = () => {
         </div>
 
         {/* Section 2: Pricing, Cost & Stock */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3.5">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 space-y-3.5">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Preço, Custo
             e Estoque
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Preço
                 (R$) *
               </label>
@@ -703,12 +703,12 @@ export const ProductDetail: React.FC = () => {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-slate-400" /> Custo (R$)
               </label>
               <input
@@ -717,14 +717,14 @@ export const ProductDetail: React.FC = () => {
                 value={costPrice}
                 onChange={(e) => setCostPrice(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-teal-400" /> Margem
                 Lucro (%)
               </label>
@@ -732,12 +732,12 @@ export const ProductDetail: React.FC = () => {
                 type="text"
                 readOnly
                 value={liveProfitMargin ? `${liveProfitMargin}%` : "0.00%"}
-                className="w-full px-3.5 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-xs text-teal-400 font-semibold focus:outline-none cursor-default"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl text-xs text-teal-600 dark:text-teal-400 font-semibold focus:outline-none cursor-default"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+              <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-indigo-400" /> Quantidade
               </label>
               <input
@@ -746,15 +746,15 @@ export const ProductDetail: React.FC = () => {
                 value={stockQuantity}
                 onChange={(e) => setStockQuantity(e.target.value)}
                 placeholder="0"
-                className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
         </div>
 
         {/* Section 3: Configuration Options */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3.5">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 space-y-3.5">
+          <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <Boxes className="w-3.5 h-3.5 text-cyan-400" /> Configurações
             Adicionais
           </h3>
@@ -765,8 +765,8 @@ export const ProductDetail: React.FC = () => {
               onClick={() => setIntegrateScale(!integrateScale)}
               className={`p-3 rounded-2xl border text-left flex flex-col gap-1.5 transition ${
                 integrateScale
-                  ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-300"
-                  : "bg-slate-800/60 border-slate-700/60 text-slate-400"
+                  ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-600 dark:text-cyan-300"
+                  : "bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 text-slate-500 dark:text-slate-400"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -783,8 +783,8 @@ export const ProductDetail: React.FC = () => {
               onClick={() => setComposite(!composite)}
               className={`p-3 rounded-2xl border text-left flex flex-col gap-1.5 transition ${
                 composite
-                  ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-300"
-                  : "bg-slate-800/60 border-slate-700/60 text-slate-400"
+                  ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-600 dark:text-indigo-300"
+                  : "bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 text-slate-500 dark:text-slate-400"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -798,7 +798,7 @@ export const ProductDetail: React.FC = () => {
           </div>
 
           <div className="space-y-1 pt-1">
-            <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+            <label className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-amber-400" /> Validade
               (Dias)
             </label>
@@ -807,16 +807,16 @@ export const ProductDetail: React.FC = () => {
               value={validityDays}
               onChange={(e) => setValidityDays(e.target.value)}
               placeholder="0"
-              className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
           </div>
         </div>
 
         {/* Section for Composite Product Components */}
         {composite && (
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3.5 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 space-y-3.5 animate-in fade-in duration-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Boxes className="w-3.5 h-3.5 text-indigo-400" /> Produtos
                 Componentes (Composição)
               </h3>
@@ -829,7 +829,7 @@ export const ProductDetail: React.FC = () => {
             {/* Live Autocomplete Search Input for Component Product */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
               <div className="sm:col-span-7 space-y-1 relative">
-                <label className="text-[11px] text-slate-300 font-medium flex items-center justify-between">
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <Search className="w-3 h-3 text-indigo-400" /> Buscar
                     Produto
@@ -852,7 +852,7 @@ export const ProductDetail: React.FC = () => {
                       if (selectedComponentId) setSelectedComponentId("");
                     }}
                     placeholder="Digite a descrição ou código de barras..."
-                    className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 pr-8"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 pr-8"
                   />
 
                   {selectedComponentId || componentSearchQuery ? (
@@ -863,7 +863,7 @@ export const ProductDetail: React.FC = () => {
                         setComponentSearchQuery("");
                         setIsComponentDropdownOpen(false);
                       }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -872,14 +872,14 @@ export const ProductDetail: React.FC = () => {
 
                 {/* Attached Autocomplete Dropdown List */}
                 {isComponentDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-slate-700/50">
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-slate-200 dark:divide-slate-700/50">
                     {componentSearchLoading ? (
-                      <div className="p-3 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                      <div className="p-3 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />{" "}
                         Buscando no servidor...
                       </div>
                     ) : componentOptionsList.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-slate-400">
+                      <div className="p-3 text-center text-xs text-slate-500 dark:text-slate-400">
                         Nenhum produto encontrado.
                       </div>
                     ) : (
@@ -899,17 +899,17 @@ export const ProductDetail: React.FC = () => {
                               );
                               setIsComponentDropdownOpen(false);
                             }}
-                            className={`w-full text-left p-2.5 transition flex items-center justify-between gap-2 hover:bg-slate-700/60 ${
+                            className={`w-full text-left p-2.5 transition flex items-center justify-between gap-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 ${
                               isSelected
-                                ? "bg-indigo-600/20 text-indigo-300 font-semibold"
-                                : "text-slate-200"
+                                ? "bg-indigo-100 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 font-semibold"
+                                : "text-slate-800 dark:text-slate-200"
                             }`}
                           >
                             <div className="min-w-0 flex-1">
                               <p className="text-xs truncate">
                                 {p.description}
                               </p>
-                              <p className="text-[10px] text-slate-400 flex items-center gap-2">
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
                                 {barcode ? <span>Cód: {barcode}</span> : null}
                                 <span>Un: {p.unit || "UN"}</span>
                               </p>
@@ -926,7 +926,7 @@ export const ProductDetail: React.FC = () => {
               </div>
 
               <div className="sm:col-span-3 space-y-1">
-                <label className="text-[11px] text-slate-400 font-medium">
+                <label className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                   Quantidade
                 </label>
                 <input
@@ -936,7 +936,7 @@ export const ProductDetail: React.FC = () => {
                   value={selectedComponentQty}
                   onChange={(e) => setSelectedComponentQty(e.target.value)}
                   placeholder="1"
-                  className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -955,7 +955,7 @@ export const ProductDetail: React.FC = () => {
             {/* List of added component products */}
             <div className="space-y-2 pt-1">
               {componentProducts.length === 0 ? (
-                <div className="p-3 bg-slate-800/40 border border-slate-800 rounded-xl text-center text-xs text-slate-500 italic">
+                <div className="p-3 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl text-center text-xs text-slate-400 dark:text-slate-500 italic">
                   Nenhum produto componente adicionado à composição.
                 </div>
               ) : (
@@ -983,14 +983,14 @@ export const ProductDetail: React.FC = () => {
                   return (
                     <div
                       key={cp.componentProductId}
-                      className="flex items-center justify-between p-3 bg-slate-800/60 border border-slate-700/60 rounded-2xl gap-3 text-xs"
+                      className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl gap-3 text-xs"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-200 truncate">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
                           {title}
                         </p>
                         {matchedProd && (
-                          <p className="text-[11px] text-slate-400">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
                             Custo Unit.: R$ {(matchedProd.cost || 0).toFixed(2)}{" "}
                             | Preço Unit.: R${" "}
                             {(matchedProd.price || 0).toFixed(2)}
@@ -999,7 +999,7 @@ export const ProductDetail: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400">Qtd:</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">Qtd:</span>
                         <input
                           type="number"
                           step="any"
@@ -1011,7 +1011,7 @@ export const ProductDetail: React.FC = () => {
                               e.target.value,
                             )
                           }
-                          className="w-16 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 text-center focus:outline-none focus:border-indigo-500 font-mono"
+                          className="w-16 px-2 py-1 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 text-center focus:outline-none focus:border-indigo-500 font-mono"
                         />
 
                         <button
@@ -1019,7 +1019,7 @@ export const ProductDetail: React.FC = () => {
                           onClick={() =>
                             handleRemoveComponent(cp.componentProductId)
                           }
-                          className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                          className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
                           title="Remover componente"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1035,17 +1035,17 @@ export const ProductDetail: React.FC = () => {
 
         {/* Section 4: Audit & Metadata (Readonly, shown when editing) */}
         {isEditing && (createdAt || createdBy || updatedAt || updatedBy) && (
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-4 space-y-2 text-slate-400">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-4 space-y-2 text-slate-500 dark:text-slate-400">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Info className="w-3.5 h-3.5 text-slate-400" /> Informações de
               Auditoria
             </h3>
             {createdBy ? (
               <div className="flex items-center gap-2 text-xs">
-                <User className="w-3.5 h-3.5 text-slate-500" />
+                <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 <span>
                   Criado por:{" "}
-                  <strong className="text-slate-300">{createdBy}</strong>
+                  <strong className="text-slate-700 dark:text-slate-300">{createdBy}</strong>
                   {createdAt ? ` em ${formatDate(createdAt)}` : ""}
                 </span>
               </div>
@@ -1053,10 +1053,10 @@ export const ProductDetail: React.FC = () => {
 
             {updatedBy ? (
               <div className="flex items-center gap-2 text-xs">
-                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 <span>
                   Atualizado por:{" "}
-                  <strong className="text-slate-300">{updatedBy}</strong>
+                  <strong className="text-slate-700 dark:text-slate-300">{updatedBy}</strong>
                   {updatedAt ? ` em ${formatDate(updatedAt)}` : ""}
                 </span>
               </div>

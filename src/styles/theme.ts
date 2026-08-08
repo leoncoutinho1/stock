@@ -2,30 +2,30 @@ import { StyleSheet } from 'react-native';
 
 export const theme = {
   colors: {
-    bgApp: '#020617',          // slate-950
-    bgCard: '#0f172a',         // slate-900
-    bgElevated: '#1e293b',     // slate-800
-    bgInput: '#1e293b',        // slate-800
-    border: '#334155',         // slate-700
-    borderSubtle: '#1e293b',   // slate-800
-    
-    primary: '#3b82f6',        // blue-500
-    primaryHover: '#2563eb',   // blue-600
-    primaryLight: 'rgba(59, 130, 246, 0.15)',
-    
-    success: '#10b981',        // emerald-500
-    successLight: 'rgba(16, 185, 129, 0.15)',
-    
-    warning: '#f59e0b',        // amber-500
-    warningLight: 'rgba(245, 158, 11, 0.15)',
-    
-    danger: '#ef4444',         // red-500
-    dangerLight: 'rgba(239, 68, 68, 0.15)',
+    bgApp:         'var(--color-bg-app)',
+    bgCard:        'var(--color-bg-card)',
+    bgElevated:    'var(--color-bg-elevated)',
+    bgInput:       'var(--color-bg-input)',
+    border:        'var(--color-border)',
+    borderSubtle:  'var(--color-border-subtle)',
 
-    textPrimary: '#f8fafc',    // slate-50
-    textSecondary: '#94a3b8',  // slate-400
-    textMuted: '#64748b',      // slate-500
-    textWhite: '#ffffff',
+    primary:       'var(--color-primary)',
+    primaryHover:  'var(--color-primary-hover)',
+    primaryLight:  'var(--color-primary-light)',
+
+    success:       'var(--color-success)',
+    successLight:  'var(--color-success-light)',
+
+    warning:       'var(--color-warning)',
+    warningLight:  'var(--color-warning-light)',
+
+    danger:        'var(--color-danger)',
+    dangerLight:   'var(--color-danger-light)',
+
+    textPrimary:   'var(--color-text-primary)',
+    textSecondary: 'var(--color-text-secondary)',
+    textMuted:     'var(--color-text-muted)',
+    textWhite:     'var(--color-text-white)',
   },
   spacing: {
     xs: 4,

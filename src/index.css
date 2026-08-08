@@ -1,7 +1,60 @@
 @import "tailwindcss";
+@variant dark (&:where(html.dark, html.dark *));
 
+/* =============================================
+   DESIGN TOKENS — Light / Dark via CSS Variables
+   ThemeContext adds/removes `.dark` on <html>
+   ============================================= */
+
+/* Light mode (default) */
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --color-bg-app:       #f1f5f9;   /* slate-100 */
+  --color-bg-card:      #ffffff;   /* white */
+  --color-bg-elevated:  #e2e8f0;   /* slate-200 */
+  --color-bg-input:     #f8fafc;   /* slate-50 */
+  --color-border:       #cbd5e1;   /* slate-300 */
+  --color-border-subtle:#e2e8f0;   /* slate-200 */
+
+  --color-text-primary: #0f172a;   /* slate-900 */
+  --color-text-secondary:#64748b;  /* slate-500 */
+  --color-text-muted:   #94a3b8;   /* slate-400 */
+  --color-text-white:   #ffffff;
+
+  --color-primary:      #3b82f6;
+  --color-primary-hover:#2563eb;
+  --color-primary-light:rgba(59, 130, 246, 0.12);
+
+  --color-success:      #10b981;
+  --color-success-light:rgba(16, 185, 129, 0.12);
+
+  --color-warning:      #f59e0b;
+  --color-warning-light:rgba(245, 158, 11, 0.12);
+
+  --color-danger:       #ef4444;
+  --color-danger-light: rgba(239, 68, 68, 0.12);
+
+  color-scheme: light;
+}
+
+/* Dark mode — applied when <html class="dark"> */
+html.dark {
+  --color-bg-app:       #020617;   /* slate-950 */
+  --color-bg-card:      #0f172a;   /* slate-900 */
+  --color-bg-elevated:  #1e293b;   /* slate-800 */
+  --color-bg-input:     #1e293b;   /* slate-800 */
+  --color-border:       #334155;   /* slate-700 */
+  --color-border-subtle:#1e293b;   /* slate-800 */
+
+  --color-text-primary: #f8fafc;   /* slate-50 */
+  --color-text-secondary:#94a3b8;  /* slate-400 */
+  --color-text-muted:   #64748b;   /* slate-500 */
+  --color-text-white:   #ffffff;
+
+  --color-primary-light:rgba(59, 130, 246, 0.15);
+  --color-success-light:rgba(16, 185, 129, 0.15);
+  --color-warning-light:rgba(245, 158, 11, 0.15);
+  --color-danger-light: rgba(239, 68, 68, 0.15);
+
   color-scheme: dark;
 }
 
@@ -12,14 +65,15 @@ html, body, #root {
   height: 100dvh;
   margin: 0;
   padding: 0;
-  background-color: #020617;
-  color: #f8fafc;
-  font-family: var(--font-sans);
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* React Native Web Root Fix */
@@ -40,6 +94,6 @@ html, body, #root {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--color-border);
   border-radius: 4px;
 }
