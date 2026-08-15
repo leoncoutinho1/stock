@@ -48,7 +48,7 @@ export const Products: React.FC = () => {
           : (searchRes as any)?.data || [];
         setProducts(list);
       } else {
-        const listRes = await productApi.getProducts(0, 50);
+        const listRes = await productApi.getProducts(0, 10);
         setProducts(listRes.data || []);
       }
     } catch (err: any) {

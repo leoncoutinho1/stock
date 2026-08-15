@@ -195,7 +195,7 @@ export const NewSale: React.FC = () => {
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               placeholder="Digitar nome ou código..."
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-2xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+              className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-sm transition"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
@@ -212,18 +212,18 @@ export const NewSale: React.FC = () => {
 
         {/* Search Results Dropdown */}
         {searchResults.length > 0 && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2 max-h-48 overflow-y-auto space-y-1 shadow-xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 max-h-48 overflow-y-auto space-y-1 shadow-xl">
             {searchResults.map((prod) => (
               <div
                 key={prod.id}
                 onClick={() => addProductToCart(prod)}
-                className="p-2 hover:bg-slate-800 rounded-xl flex items-center justify-between cursor-pointer text-xs transition"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center justify-between cursor-pointer text-xs transition"
               >
                 <div>
-                  <span className="font-semibold text-slate-200 block">{prod.description}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">{prod.barCode || "S/ COD"}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 block">{prod.description}</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{prod.barCode || "S/ COD"}</span>
                 </div>
-                <span className="font-bold text-emerald-400">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   R$ {(prod.price || 0).toFixed(2)}
                 </span>
               </div>
@@ -233,21 +233,21 @@ export const NewSale: React.FC = () => {
       </div>
 
       {errorMsg && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs text-center font-medium">
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-500 dark:text-red-400 text-xs text-center font-medium">
           {errorMsg}
         </div>
       )}
 
       {/* Cart Items List */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-          <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-            <ShoppingCart className="w-4 h-4 text-blue-400" /> Carrinho ({cart.reduce((a, b) => a + b.quantity, 0)} itens)
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 space-y-3 shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            <ShoppingCart className="w-4 h-4 text-blue-500 dark:text-blue-400" /> Carrinho ({cart.reduce((a, b) => a + b.quantity, 0)} itens)
           </h3>
           {cart.length > 0 && (
             <button
               onClick={() => setCart([])}
-              className="text-[11px] text-red-400 hover:text-red-300 font-medium"
+              className="text-[11px] text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 font-medium"
             >
               Limpar
             </button>
@@ -255,40 +255,40 @@ export const NewSale: React.FC = () => {
         </div>
 
         {cart.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-xs space-y-1">
-            <p>Carrinho vazio.</p>
-            <p className="text-[11px] text-slate-600">Use a busca acima ou a câmera para adicionar produtos.</p>
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs space-y-1">
+            <p className="font-medium text-slate-600 dark:text-slate-300">Carrinho vazio.</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">Use a busca acima ou a câmera para adicionar produtos.</p>
           </div>
         ) : (
           <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
             {cart.map((item) => (
               <div
                 key={item.product.id}
-                className="bg-slate-800/60 border border-slate-700/60 p-2.5 rounded-2xl flex items-center justify-between gap-2"
+                className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 p-2.5 rounded-2xl flex items-center justify-between gap-2 shadow-sm"
               >
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-xs text-slate-100 truncate">
+                  <h4 className="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate">
                     {item.product.description}
                   </h4>
-                  <span className="text-[11px] text-emerald-400 font-bold block">
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block">
                     R$ {(item.unitPrice * item.quantity).toFixed(2)}{" "}
-                    <span className="text-[10px] text-slate-400 font-normal">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
                       ({item.quantity}x R$ {item.unitPrice.toFixed(2)})
                     </span>
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-700">
+                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                   <button
                     onClick={() => updateQuantity(item.product.id, -1)}
-                    className="p-1 text-slate-400 hover:text-white rounded-lg active:scale-95 transition"
+                    className="p-1 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg active:scale-95 transition"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-xs font-bold text-slate-200 px-1.5">{item.quantity}</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 px-1.5">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.product.id, 1)}
-                    className="p-1 text-slate-400 hover:text-white rounded-lg active:scale-95 transition"
+                    className="p-1 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg active:scale-95 transition"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -296,7 +296,8 @@ export const NewSale: React.FC = () => {
 
                 <button
                   onClick={() => removeFromCart(item.product.id)}
-                  className="p-1.5 text-slate-500 hover:text-red-400 rounded-xl"
+                  className="p-1.5 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 rounded-xl active:scale-95 transition"
+                  title="Remover Item"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -307,15 +308,15 @@ export const NewSale: React.FC = () => {
       </div>
 
       {/* Sale Options (Payment Form & Client) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 space-y-3 shadow-sm">
         <div className="space-y-1">
-          <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-            <CreditCard className="w-3.5 h-3.5 text-emerald-400" /> Forma de Pagamento
+          <label className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1.5">
+            <CreditCard className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> Forma de Pagamento
           </label>
           <select
             value={selectedPaymentFormId || ""}
             onChange={(e) => setSelectedPaymentFormId(Number(e.target.value))}
-            className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 transition"
           >
             {paymentForms.map((pf) => (
               <option key={pf.id} value={pf.id}>
@@ -326,24 +327,24 @@ export const NewSale: React.FC = () => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-blue-400" /> Cliente (Opcional)
+          <label className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" /> Cliente (Opcional)
           </label>
           <input
             type="text"
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder="Nome do cliente..."
-            className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
           />
         </div>
       </div>
 
       {/* Checkout Footer */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-900/90 border border-slate-800 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-xl">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-xl">
         <div>
-          <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Total da Venda</span>
-          <span className="text-xl font-extrabold text-emerald-400">
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-medium">Total da Venda</span>
+          <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
             R$ {totalAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
           </span>
         </div>

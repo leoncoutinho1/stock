@@ -1,14 +1,5 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  StyleSheet,
-} from "react-native";
-import { useNavigate } from "react-router-dom";
 import { saleApi } from "@/src/api/sale";
+import { theme } from "@/src/styles/theme";
 import {
   AlertCircle,
   Calendar,
@@ -17,7 +8,16 @@ import {
   ShoppingBag,
   User,
 } from "lucide-react";
-import { theme } from "@/src/styles/theme";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useNavigate } from "react-router-dom";
 
 export const Sales: React.FC = () => {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export const Sales: React.FC = () => {
     setErrorMsg(null);
     try {
       const res = await saleApi.getSales({
-        limit: 50,
+        limit: 10,
         sort: "-SaleDate",
       });
       setSales(res.data || []);
@@ -58,7 +58,10 @@ export const Sales: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
       {/* Header action */}
       <View style={styles.headerRow}>
         <Text style={styles.sectionTitle}>Últimas Vendas Realizadas</Text>
@@ -89,7 +92,9 @@ export const Sales: React.FC = () => {
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator color={theme.colors.primary} size="large" />
-          <Text style={styles.loadingText}>Carregando histórico de vendas...</Text>
+          <Text style={styles.loadingText}>
+            Carregando histórico de vendas...
+          </Text>
         </View>
       ) : sales.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -111,7 +116,8 @@ export const Sales: React.FC = () => {
         <View style={styles.listContainer}>
           {sales.map((sale, idx) => {
             const rawDate = sale.saleDate || sale.createdAt;
-            const totalValue = sale.totalValue ?? sale.total ?? sale.totalAmount ?? 0;
+            const totalValue =
+              sale.totalValue ?? sale.total ?? sale.totalAmount ?? 0;
 
             return (
               <TouchableOpacity
@@ -139,7 +145,9 @@ export const Sales: React.FC = () => {
                       {sale.paymentFormName ? (
                         <View style={styles.tagItem}>
                           <CreditCard color={theme.colors.success} size={12} />
-                          <Text style={styles.tagText}>{sale.paymentFormName}</Text>
+                          <Text style={styles.tagText}>
+                            {sale.paymentFormName}
+                          </Text>
                         </View>
                       ) : null}
                     </View>

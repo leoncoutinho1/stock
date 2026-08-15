@@ -2,6 +2,7 @@ import { Category, categoryApi } from "@/src/api/category";
 import { productApi } from "@/src/api/product";
 import { ProductCompositionDto, ProductDto } from "@/src/api/types";
 import { BarcodeScannerModal } from "@/src/components/BarcodeScannerModal";
+import { CameraCaptureModal } from "@/src/components/CameraCaptureModal";
 import {
   Barcode,
   Boxes,
@@ -83,6 +84,7 @@ export const ProductDetail: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -247,15 +249,13 @@ export const ProductDetail: React.FC = () => {
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhoto(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handlePhotoCaptured = (compressedBase64: string) => {
+    setPhoto(compressedBase64);
+  };
+
+  const handleRemovePhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPhoto(null);
   };
 
   const handleAddBarcode = () => {
@@ -464,37 +464,48 @@ export const ProductDetail: React.FC = () => {
       <form onSubmit={handleSave} className="space-y-4">
         {/* Photo & Active Status Header */}
         <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl relative overflow-hidden">
-          <div className="w-24 h-24 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden mb-3 relative group">
+          <div
+            onClick={() => setCameraModalOpen(true)}
+            className="w-24 h-24 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden mb-3 relative group cursor-pointer shadow-sm hover:border-blue-500/50 transition"
+            title="Abrir câmera para foto do produto"
+          >
             {photo ? (
               <img
                 src={photo}
                 alt="Foto do Produto"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
               />
             ) : (
               <Package className="w-10 h-10 text-slate-400 dark:text-slate-600" />
             )}
-            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white cursor-pointer transition">
-              <Upload className="w-6 h-6" />
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoUpload}
-              />
-            </label>
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition backdrop-blur-[2px]">
+              <Camera className="w-6 h-6 mb-1" />
+              <span className="text-[10px] font-medium">Tirar Foto</span>
+            </div>
           </div>
 
-          <label className="text-xs font-semibold text-blue-400 hover:text-blue-300 cursor-pointer flex items-center gap-1 mb-2">
-            <Camera className="w-3.5 h-3.5" />
-            <span>{photo ? "Alterar Imagem" : "Adicionar Foto"}</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoUpload}
-            />
-          </label>
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setCameraModalOpen(true)}
+              className="text-xs font-semibold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 transition active:scale-95"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>{photo ? "Alterar Foto" : "Tirar Foto"}</span>
+            </button>
+
+            {photo && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-800/40 transition active:scale-95"
+                title="Remover Foto"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Remover</span>
+              </button>
+            )}
+          </div>
 
           {/* Active Status Badge Toggle */}
           <button
@@ -1107,6 +1118,13 @@ export const ProductDetail: React.FC = () => {
           }
         }}
         title="Escanear Código para o Produto"
+      />
+      {/* Camera Capture Modal with auto-compression */}
+      <CameraCaptureModal
+        isOpen={cameraModalOpen}
+        onClose={() => setCameraModalOpen(false)}
+        onCapture={handlePhotoCaptured}
+        title={photo ? "Alterar Foto do Produto" : "Tirar Foto do Produto"}
       />
     </div>
   );
